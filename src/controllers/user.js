@@ -1,10 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+const { User } = require('../models');
 const { sendVerificationEmail } = require('../config/email');
-
-// 랜덤 인증 코드 생성 (회원가입, 비밀번호 찾기) -> config/email.js로 
-//const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 // 로그인
 exports.login = async(req, res) => {
@@ -18,6 +15,8 @@ exports.login = async(req, res) => {
             return res.status(401).json({message : '존재하지 않는 사용자입니다.'});
         }
 
+        console.log("DB에 저장된 해시 비밀번호:", user.password);  // 여기서 user가 null이면 에러 발생
+
         // 비밀번호 검증
         const isMatch = await bcrypt.compare(password, user.password);
         if(!isMatch){
@@ -27,7 +26,7 @@ exports.login = async(req, res) => {
         // 비밀번호가 일치하면 JWT토큰 발급
         const token = jwt.sign({id : user.user_id, email : user.email}, 
             process.env.JWT_SECRET, 
-            {expiresIn :'1h'});
+            {expiresIn :'12h'});
 
         return res.json({message : '로그인 성공', token}); // 클라이언트에게 토큰을 응답으로 전달
 
@@ -39,7 +38,14 @@ exports.login = async(req, res) => {
 
 // 회원가입
 exports.register = async (req, res) => {
-    const { email, password } = req.body;
+    const { name, email, password, passwordCheck } = req.body;
+
+    console.log("Request Body:", req.body); // 요청 데이터 확인
+
+    // 비밀번호와 비밀번호 확인이 일치하는지 검사
+    if (password !== passwordCheck) {
+        return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
+    }
 
     try {
         // 이메일 중복 확인
@@ -48,13 +54,16 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: "이미 가입된 이메일입니다." });
         }
 
-        // 사용자 계정 생성 (비밀번호 해싱 포함)
+        // 비밀번호 해싱
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // 사용자 계정 생성
         const newUser = await User.create({
+            name,
             email,
             password: hashedPassword,
-            verification_code: null,
-            verification_expiration: null
+            verificationCode: null, // 나중에 인증 관련 필드를 업데이트할 경우 사용할 수 있음
+            verificationExpiresAt: null
         });
 
         return res.status(201).json({ message: "회원가입 성공" });
@@ -70,7 +79,8 @@ exports.logout = async(req, res) => {
     return res.json({message : '로그아웃 성공'});
 }
 
-// 비밀번호 찾기
+// 비밀번호 찾기 
+// (인증코드 전송 -> 비밀번호 재설정하도록)
 exports.findPassword = async (req, res) => {
     const { email } = req.body;
 
@@ -87,8 +97,8 @@ exports.findPassword = async (req, res) => {
 
         // 사용자 인증 코드, 만료 시간 업데이트
         await user.update({
-            verification_code: verificationCode,
-            verification_expiration: verificationExpiration
+            verificationCode: verificationCode,
+            verificationExpiresAt: verificationExpiration
         });
 
         return res.json({ message: "비밀번호 재설정 인증 코드가 이메일로 전송되었습니다." });
@@ -99,33 +109,29 @@ exports.findPassword = async (req, res) => {
     }
 };
 
-// 비밀번호 재설정
+// 비밀번호 재설정 (인증코드 검증 완료된 후 실행)
 exports.resetPassword = async (req, res) => {
-    const { email, verificationCode, newPassword } = req.body;
+    const { email, newPassword } = req.body;
 
     // 이메일 찾기
     try {
+        // 이메일로 사용자 찾기
         const user = await User.findOne({ where: { email } });
 
         if (!user) {
             return res.status(400).json({ message: "존재하지 않는 이메일입니다." });
         }
 
-        const verificationResult = verifyCode(user, verificationCode);
-
-        if (!verificationResult.valid) {
-            return res.status(400).json({ message: verificationResult.message });
+        // 인증 코드가 이미 확인된 상태인지 체크 (verifyCode에서 null로 설정됨)
+        if (user.verificationCode !== null) {
+            return res.status(400).json({ message: "인증 코드 확인이 필요합니다." });
         }
 
         // 새 비밀번호 해싱
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // 비밀번호 및 인증 정보 업데이트
-        await user.update({
-            password: hashedPassword,
-            verification_code: null,
-            verification_expiration: null
-        });
+        // 비밀번호 업데이트
+        await user.update({ password: hashedPassword });
 
         return res.json({ message: "비밀번호 재설정이 완료되었습니다." });
 
@@ -147,8 +153,8 @@ exports.sendVerificationCode = async (req, res) => {
         const user = await User.findOne({ where: { email } });
         if (user) {
             await user.update({
-                verification_code: verificationCode,
-                verification_expiration: verificationExpiration
+                verificationCode: verificationCode,
+                verificationExpiresAt: verificationExpiration
             });
             return res.json({ message: "인증 코드가 이메일로 전송되었습니다." });
         }
@@ -172,14 +178,20 @@ exports.verifyCode = async (req, res) => {
         }
 
         // 인증 코드 검증
-        if (user.verification_code !== verificationCode) {
+        if (user.verificationCode !== verificationCode) {
             return res.status(400).json({ message: "인증 코드가 올바르지 않습니다." });
         }
 
         // 인증 코드 만료 확인
-        if (new Date() > new Date(user.verification_expiration)) {
-            return res.status(400).json({ message: "인증 코드가 만료되었습니다." });
+        if (new Date() > new Date(user.verificationExpiresAt)) {
+            return res.status(400).json({ message: "인증 코드가 만료되었습니다." })
         }
+
+        // 인증 성공 시, 인증 코드 무효화 (더 이상 재사용 불가)
+        await user.update({
+            verificationCode: null,
+            verificationExpiresAt: null
+        });
 
         return res.json({ message: "인증 코드가 확인되었습니다." });
     } catch (error) {

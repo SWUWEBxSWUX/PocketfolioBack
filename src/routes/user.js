@@ -18,7 +18,7 @@ router.post('/logout', logout);
 router.post('/find-password', findPassword);
 
 // 비밀번호 재설정
-router.post('/resetPassword', resetPassword);
+router.post('/reset-password', resetPassword);
 
 // 인증번호 전송
 router.post('/send-verification-code', sendVerificationCode);
