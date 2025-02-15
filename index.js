@@ -1,4 +1,4 @@
-nodconst app = require("./app");
+const app = require("./app");
 const { sequelize } = require("./src/models"); // Sequelize DB 연결
 
 const PORT = process.env.PORT || 3000;
