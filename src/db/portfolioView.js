@@ -7,11 +7,11 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      portfolio_id: {
+      portfolioId: {
         type: DataTypes.BIGINT,
         allowNull: false,
       },
-      user_ip: {
+      userIp: {
         type: DataTypes.STRING(45),
       },
     },

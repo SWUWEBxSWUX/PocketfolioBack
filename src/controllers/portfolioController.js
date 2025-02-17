@@ -3,19 +3,25 @@ const portfolioService = require('../services/portfolioService');
 /** 🔹 포트폴리오 생성 */
 exports.createPortfolio = async (req, res) => {
   try {
-    const { title, duration_start, duration_end, role, job, company, description, tags } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ message: "인증 정보가 없습니다." });
+    }
+
+    const { title, durationStart, durationEnd, role, job, company, description, tags } = req.body;
     const userId = req.user.id;
     const file = req.file; // 표지 이미지 (선택 사항)
+    const attachments = req.files ? req.files.map(file => file.location) : [];
 
     const portfolio = await portfolioService.createPortfolio(userId, {
       title,
-      duration_start,
-      duration_end,
+      durationStart,
+      durationEnd,
       role,
       job,
       company,
       description,
-      tags
+      tags,
+      attachments,
     }, file);
 
     res.status(201).json({ message: '포트폴리오가 생성되었습니다.', portfolio });

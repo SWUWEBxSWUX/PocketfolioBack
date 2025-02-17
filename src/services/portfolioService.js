@@ -12,15 +12,15 @@ exports.createPortfolio = async (userId, data, file) => {
 
   // 포트폴리오 생성
   const portfolio = await Portfolio.create({
-    user_id: userId,
+    userId: userId,
     title: data.title,
-    duration_start: data.duration_start,
-    duration_end: data.duration_end,
+    durationStart: data.durationStart,
+    durationEnd: data.durationEnd,
     role: data.role,
     job: data.job,
     company: data.company,
     description: data.description,
-    cover_image: coverImageUrl,
+    coverImage: coverImageUrl,
   });
 
   // 태그 연결 (Portfolio_Tags 테이블)
@@ -30,7 +30,7 @@ exports.createPortfolio = async (userId, data, file) => {
       if (!tag) {
         tag = await Tag.create({ name: tagName });
       }
-      await PortfolioTag.create({ portfolio_id: portfolio.id, tag_id: tag.id });
+      await PortfolioTag.create({ portfolioId: portfolio.id, tagId: tag.id });
     }
   }
 
@@ -42,7 +42,9 @@ exports.getPortfolioDetails = async (portfolioId) => {
   return await Portfolio.findByPk(portfolioId, {
     include: [
       { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] },
-      { model: PortfolioLike, attributes: ['user_id'] },
+      { model: PortfolioLike, attributes: ["userId"] },
+      { model: Attachment, attributes: ["fileUrl"] }, // ✅ `file_url` → `fileUrl`
+      { model: PortfolioView, attributes: ["userIp"] }, // ✅ 조회 기록 포함
     ],
   });
 };
@@ -50,7 +52,7 @@ exports.getPortfolioDetails = async (portfolioId) => {
 /** 🔹 포트폴리오 수정 */
 exports.updatePortfolio = async (userId, portfolioId, data) => {
   const portfolio = await Portfolio.findByPk(portfolioId);
-  if (!portfolio || portfolio.user_id !== userId) {
+  if (!portfolio || portfolio.userId !== userId) {
     return null; // 수정 권한 없음
   }
 
@@ -62,14 +64,14 @@ exports.updatePortfolio = async (userId, portfolioId, data) => {
 
   // 태그 업데이트 (기존 태그 제거 후 새로 추가)
   if (data.tags) {
-    await PortfolioTag.destroy({ where: { portfolio_id: portfolioId } });
+    await PortfolioTag.destroy({ where: { portfolioId: portfolioId } });
 
     for (const tagName of data.tags) {
       let tag = await Tag.findOne({ where: { name: tagName } });
       if (!tag) {
         tag = await Tag.create({ name: tagName });
       }
-      await PortfolioTag.create({ portfolio_id: portfolio.id, tag_id: tag.id });
+      await PortfolioTag.create({ portfolioId: portfolio.id, tagId: tag.id });
     }
   }
 
@@ -79,7 +81,7 @@ exports.updatePortfolio = async (userId, portfolioId, data) => {
 /** 🔹 포트폴리오 삭제 */
 exports.deletePortfolio = async (userId, portfolioId) => {
   const portfolio = await Portfolio.findByPk(portfolioId);
-  if (!portfolio || portfolio.user_id !== userId) {
+  if (!portfolio || portfolio.userId !== userId) {
     return false;
   }
 
@@ -89,13 +91,13 @@ exports.deletePortfolio = async (userId, portfolioId) => {
 
 /** 🔹 포트폴리오 좋아요 추가/취소 */
 exports.toggleLike = async (userId, portfolioId) => {
-  const existingLike = await PortfolioLike.findOne({ where: { user_id: userId, portfolio_id: portfolioId } });
+  const existingLike = await PortfolioLike.findOne({ where: { userId: userId, portfolioId: portfolioId } });
 
   if (existingLike) {
     await existingLike.destroy();
     return { liked: false };
   } else {
-    await PortfolioLike.create({ user_id: userId, portfolio_id: portfolioId });
+    await PortfolioLike.create({ userId, portfolioId });
     return { liked: true };
   }
 };
@@ -142,23 +144,35 @@ exports.getPortfolioWithViews = async (portfolioId) => {
   }
 };
 ***/
-exports.incrementView = async (portfolioId) => {
-    try {
-      // ✅ 포트폴리오 조회수 +1 (DB 업데이트)
-      const portfolio = await Portfolio.findByPk(portfolioId);
-      if (!portfolio) {
-        throw new Error('포트폴리오를 찾을 수 없습니다.');
-      }
+/** 🔹 포트폴리오 조회수 증가 */
+exports.incrementView = async (portfolioId, userIp) => { // ✅ `userIp` 추가
+  try {
+    const portfolio = await Portfolio.findByPk(portfolioId);
+    if (!portfolio) {
+      throw new Error("포트폴리오를 찾을 수 없습니다.");
+    }
 
+    // ✅ `PortfolioView` 테이블에서 조회한 기록이 있는지 확인
+    const existingView = await PortfolioView.findOne({
+      where: { portfolioId, userIp },
+    });
+
+    if (!existingView) {
+      // ✅ 조회 기록이 없으면 `PortfolioView` 테이블에 추가
+      await PortfolioView.create({ portfolioId, userIp });
+
+      // ✅ 포트폴리오 조회수 증가
       portfolio.views += 1;
       await portfolio.save();
-
-      return portfolio.views;
-    } catch (error) {
-      console.error('❌ 조회수 증가 오류:', error);
-      throw error;
     }
+
+    return portfolio.views;
+  } catch (error) {
+    console.error("❌ 조회수 증가 오류:", error);
+    throw error;
+  }
 };
+
 exports.getPortfolioWithViews = async (portfolioId) => {
     try {
       // ✅ DB에서 조회수 포함하여 포트폴리오 조회
@@ -182,13 +196,13 @@ exports.getPortfolioWithViews = async (portfolioId) => {
 
 /** 🔹 포트폴리오 댓글 추가 */
 exports.addComment = async (userId, portfolioId, content) => {
-  return await Comment.create({ user_id: userId, portfolio_id: portfolioId, content });
+  return await Comment.create({ userId: userId, portfolioId: portfolioId, content });
 };
 
 /** 🔹 포트폴리오 댓글 삭제 */
 exports.deleteComment = async (userId, commentId) => {
   const comment = await Comment.findByPk(commentId);
-  if (!comment || comment.user_id !== userId) {
+  if (!comment || comment.userId !== userId) {
     return false;
   }
   await comment.destroy();
