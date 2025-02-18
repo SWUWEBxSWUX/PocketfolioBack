@@ -24,7 +24,7 @@ exports.login = async(req, res) => {
         }
 
         // 비밀번호가 일치하면 JWT토큰 발급
-        const token = jwt.sign({id : user.user_id, email : user.email}, 
+        const token = jwt.sign({id : user.id, email : user.email}, 
             process.env.JWT_SECRET, 
             {expiresIn :'12h'});
 
