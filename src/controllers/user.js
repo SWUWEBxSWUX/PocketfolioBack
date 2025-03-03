@@ -111,15 +111,31 @@ exports.findPassword = async (req, res) => {
 
 // 비밀번호 재설정 (인증코드 검증 완료된 후 실행)
 exports.resetPassword = async (req, res) => {
-    const { email, newPassword } = req.body;
+    const { newPassword, passwordCheck } = req.body;
+
+        // 비밀번호와 비밀번호 확인이 일치하는지 검사
+    if (newPassword !== passwordCheck) {
+        return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
+    }
 
     // 이메일 찾기
     try {
-        // 이메일로 사용자 찾기
-        const user = await User.findOne({ where: { email } });
+        // JWT 토큰을 Authorization 헤더에서 바로 추출
+        const token = req.headers.authorization;
+
+        if (!token) {
+            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
+        }
+
+        // JWT 토큰 검증
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
+
+
+        // 사용자 찾기
+        const user = await User.findOne({ where: { id: decoded.id } });
 
         if (!user) {
-            return res.status(400).json({ message: "존재하지 않는 이메일입니다." });
+            return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
 
         // 인증 코드가 이미 확인된 상태인지 체크 (verifyCode에서 null로 설정됨)
@@ -168,13 +184,23 @@ exports.sendVerificationCode = async (req, res) => {
 
 // 인증 코드 검증
 exports.verifyCode = async (req, res) => {
-    const { email, verificationCode } = req.body;
+    const { verificationCode } = req.body;
 
     try {
-        // 이메일로 사용자 찾기
-        const user = await User.findOne({ where: { email } });
+        // JWT 토큰을 Authorization 헤더에서 추출
+        const token = req.headers.authorization;
+
+        if (!token) {
+            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
+        }
+
+        // JWT 토큰 검증
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
+
+        // 사용자 찾기
+        const user = await User.findOne({ where: { id: decoded.id } });
         if (!user) {
-            return res.status(400).json({ message: "등록되지 않은 이메일입니다." });
+            return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
 
         // 인증 코드 검증
