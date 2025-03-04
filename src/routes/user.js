@@ -2,8 +2,6 @@ const express = require('express')
 
 const { verifyToken } = require('../middlewares');
 const { register, login, logout, findPassword, resetPassword, sendVerificationCode, verifyCode,  regSendVerificationCode, regVerifyCode} = require('../controllers/user');
-const { regSendVerificationCode } = require('../controllers/user');
-const { regVerifyCode } = require('../controllers/user');
 
 const router = express.Router();
 
