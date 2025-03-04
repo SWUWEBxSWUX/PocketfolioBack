@@ -2,6 +2,8 @@ const express = require('express')
 
 const { verifyToken } = require('../middlewares');
 const { register, login, logout, findPassword, resetPassword, sendVerificationCode, verifyCode } = require('../controllers/user');
+const { regSendVerificationCode } = require('../controllers/user');
+const { regVerifyCode } = require('../controllers/user');
 
 const router = express.Router();
 
@@ -25,6 +27,12 @@ router.post('/send-verification-code', sendVerificationCode);
 
 // 인증번호 검증
 router.post('/verify-code', verifyCode);
+
+//인증번호 전송(회원가입 시)
+router.post('/reg-send-verification-code', regSendVerificationCode);
+
+//인증번호 검증(회원가입 시)
+router.post('/reg-verify-code', regVerifyCode);
 
 // JWT 검증이 제대로 되는지 확인용
 router.get('/test', verifyToken, (req, res) => {
