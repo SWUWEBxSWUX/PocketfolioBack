@@ -157,7 +157,7 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// 인증 코드 전송
+// 인증 코드 전송(비밀번호 찾기, 재전송 시)
 exports.sendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
@@ -218,6 +218,72 @@ exports.verifyCode = async (req, res) => {
             verificationCode: null,
             verificationExpiresAt: null
         });
+
+        return res.json({ message: "인증 코드가 확인되었습니다." });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "서버 오류" });
+    }
+};
+
+//인증코드 전송(회원가입 시)
+const verificationCodes = {};  // 인증 코드 저장 (메모리)
+// 인증 코드 전송(비밀번호 찾기, 재전송 시)
+exports.regSendVerificationCode = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // 인증 코드 생성 및 이메일 전송
+        const { verificationCode, verificationExpiration } = await sendVerificationEmail(email);
+
+        // 인증 코드와 만료 시간 메모리에 저장
+        verificationCodes[email] = { code: verificationCode, expiresAt: verificationExpiration };
+
+        return res.json({ message: "인증 코드가 이메일로 전송되었습니다." });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "서버 오류" });
+    }
+};
+
+//인증 코드 검증(회원가입 시)
+exports.regVerifyCode = async (req, res) => {
+    const { verificationCode } = req.body;
+
+    try {
+        // JWT 토큰을 Authorization 헤더에서 추출
+        const token = req.headers.authorization;
+
+        if (!token) {
+            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
+        }
+
+        // JWT 토큰 검증
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
+
+        // 사용자의 이메일을 추출
+        const email = decoded.email;
+
+        // 메모리에서 인증 코드 확인
+        const storedCode = verificationCodes[email]; // 메모리에 저장된 인증 코드 가져오기
+
+        if (!storedCode) {
+            return res.status(400).json({ message: "인증 코드가 존재하지 않습니다. 다시 인증 요청을 해주세요." });
+        }
+
+        // 인증 코드 검증
+        if (storedCode.code !== verificationCode) {
+            return res.status(400).json({ message: "인증 코드가 올바르지 않습니다." });
+        }
+
+        // 인증 코드 만료 확인
+        if (new Date() > new Date(storedCode.expiresAt)) {
+            return res.status(400).json({ message: "인증 코드가 만료되었습니다." });
+        }
+
+        // 인증 성공 시, 인증 코드 삭제 (더 이상 재사용 불가)
+        delete verificationCodes[email];
 
         return res.json({ message: "인증 코드가 확인되었습니다." });
     } catch (error) {
