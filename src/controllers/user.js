@@ -249,22 +249,13 @@ exports.regSendVerificationCode = async (req, res) => {
 
 //인증 코드 검증(회원가입 시)
 exports.regVerifyCode = async (req, res) => {
-    const { verificationCode } = req.body;
+    const { email, verificationCode } = req.body;
 
     try {
-        // JWT 토큰을 Authorization 헤더에서 추출
-        const token = req.headers.authorization;
-
-        if (!token) {
-            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
+        
+        if (!email) {
+            return res.status(400).json({ message: "이메일이 제공되지 않았습니다." });
         }
-
-        // JWT 토큰 검증
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
-
-        // 사용자의 이메일을 추출
-        const email = decoded.email;
-
         // 메모리에서 인증 코드 확인
         const storedCode = verificationCodes[email]; // 메모리에 저장된 인증 코드 가져오기
 
