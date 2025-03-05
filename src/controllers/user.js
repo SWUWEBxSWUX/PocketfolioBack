@@ -149,18 +149,20 @@ exports.sendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
     try {
+        // 사용자 찾기
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.status(400).json({ message: "등록되지 않은 이메일입니다." });
+        }
+
         // 인증 코드 생성 및 이메일 전송
         const { verificationCode, verificationExpiration } = await sendVerificationEmail(email);
 
-        // 이메일로 전송된 인증 코드와 만료 시간 저장
-        const user = await User.findOne({ where: { email } });
-        if (user) {
-            await user.update({
-                verificationCode: verificationCode,
-                verificationExpiresAt: verificationExpiration
-            });
-            return res.json({ message: "인증 코드가 이메일로 전송되었습니다." });
-        }
+        // 이메일로 전송된 인증 코드와 만료 시간 업데이트
+        await user.update({
+            verificationCode: verificationCode,
+            verificationExpiresAt: verificationExpiration
+        });
 
         return res.status(400).json({ message: "등록되지 않은 이메일입니다." });
     } catch (error) {
