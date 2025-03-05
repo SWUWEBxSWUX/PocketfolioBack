@@ -2,9 +2,10 @@ const jwt =  require('jsonwebtoken')
 
 exports.verifyToken = (req, res, next) => {
     try{
-
-        // JWT 토큰 검증 후 payload를 res.locals.decoded에 저장
-        res.locals.decoded = jwt.verify(req.headers.authorization, process.env.JWT_SECRET);
+        
+        // JWT 토큰 검증 후 payload를 req.user에 저장
+        const decoded = jwt.verify(req.headers.authorization, process.env.JWT_SECRET);
+        req.user = decoded;
         return next();
 
     }catch(error){

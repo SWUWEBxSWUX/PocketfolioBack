@@ -24,7 +24,7 @@ exports.login = async(req, res) => {
         }
 
         // 비밀번호가 일치하면 JWT토큰 발급
-        const token = jwt.sign({id : user.user_id, email : user.email}, 
+        const token = jwt.sign({id : user.id, email : user.email}, 
             process.env.JWT_SECRET, 
             {expiresIn :'12h'});
 
@@ -111,18 +111,22 @@ exports.findPassword = async (req, res) => {
 
 // 비밀번호 재설정 (인증코드 검증 완료된 후 실행)
 exports.resetPassword = async (req, res) => {
-    const { email, newPassword } = req.body;
+    const { email, newPassword, passwordCheck } = req.body;
 
-    // 이메일 찾기
+    // 비밀번호와 비밀번호 확인이 일치하는지 검사
+    if (newPassword !== passwordCheck) {
+        return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
+    }
+
     try {
-        // 이메일로 사용자 찾기
+        // 사용자 찾기
         const user = await User.findOne({ where: { email } });
 
         if (!user) {
-            return res.status(400).json({ message: "존재하지 않는 이메일입니다." });
+            return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
 
-        // 인증 코드가 이미 확인된 상태인지 체크 (verifyCode에서 null로 설정됨)
+        // 인증 코드가 이미 확인된 상태인지 체크
         if (user.verificationCode !== null) {
             return res.status(400).json({ message: "인증 코드 확인이 필요합니다." });
         }
@@ -134,14 +138,13 @@ exports.resetPassword = async (req, res) => {
         await user.update({ password: hashedPassword });
 
         return res.json({ message: "비밀번호 재설정이 완료되었습니다." });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "서버 오류" });
     }
 };
 
-// 인증 코드 전송
+// 인증 코드 전송(비밀번호 찾기, 재전송 시)
 exports.sendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
@@ -171,10 +174,10 @@ exports.verifyCode = async (req, res) => {
     const { email, verificationCode } = req.body;
 
     try {
-        // 이메일로 사용자 찾기
+        // 사용자 찾기
         const user = await User.findOne({ where: { email } });
         if (!user) {
-            return res.status(400).json({ message: "등록되지 않은 이메일입니다." });
+            return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
 
         // 인증 코드 검증
@@ -184,7 +187,7 @@ exports.verifyCode = async (req, res) => {
 
         // 인증 코드 만료 확인
         if (new Date() > new Date(user.verificationExpiresAt)) {
-            return res.status(400).json({ message: "인증 코드가 만료되었습니다." })
+            return res.status(400).json({ message: "인증 코드가 만료되었습니다." });
         }
 
         // 인증 성공 시, 인증 코드 무효화 (더 이상 재사용 불가)
@@ -192,6 +195,63 @@ exports.verifyCode = async (req, res) => {
             verificationCode: null,
             verificationExpiresAt: null
         });
+
+        return res.json({ message: "인증 코드가 확인되었습니다." });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "서버 오류" });
+    }
+};
+
+//인증코드 전송(회원가입 시)
+const verificationCodes = {};  // 인증 코드 저장 (메모리)
+// 인증 코드 전송(비밀번호 찾기, 재전송 시)
+exports.regSendVerificationCode = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        // 인증 코드 생성 및 이메일 전송
+        const { verificationCodes, verificationExpiration } = await sendVerificationEmail(email);
+
+        // 인증 코드와 만료 시간 메모리에 저장
+        verificationCodes[email] = { code: verificationCode, expiresAt: verificationExpiration };
+
+        return res.json({ message: "인증 코드가 이메일로 전송되었습니다." });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "서버 오류" });
+    }
+};
+
+//인증 코드 검증(회원가입 시)
+exports.regVerifyCode = async (req, res) => {
+    const { email, verificationCode } = req.body;
+
+    try {
+
+        if (!email) {
+            return res.status(400).json({ message: "이메일이 제공되지 않았습니다." });
+        }
+        // 메모리에서 인증 코드 확인
+        const storedCode = verificationCodes[email]; // 메모리에 저장된 인증 코드 가져오기
+
+        if (!storedCode) {
+            return res.status(400).json({ message: "인증 코드가 존재하지 않습니다. 다시 인증 요청을 해주세요." });
+        }
+
+        // 인증 코드 검증
+        if (storedCode.code !== verificationCode) {
+            return res.status(400).json({ message: "인증 코드가 올바르지 않습니다." });
+        }
+
+        // 인증 코드 만료 확인
+        if (new Date() > new Date(storedCode.expiresAt)) {
+            return res.status(400).json({ message: "인증 코드가 만료되었습니다." });
+        }
+
+        // 인증 성공 시, 인증 코드 삭제 (더 이상 재사용 불가)
+        delete verificationCodes[email];
 
         return res.json({ message: "인증 코드가 확인되었습니다." });
     } catch (error) {
