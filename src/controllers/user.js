@@ -144,7 +144,6 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// 인증 코드 전송(비밀번호 찾기, 재전송 시)
 exports.sendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
@@ -164,12 +163,14 @@ exports.sendVerificationCode = async (req, res) => {
             verificationExpiresAt: verificationExpiration
         });
 
-        return res.status(400).json({ message: "등록되지 않은 이메일입니다." });
+        // 성공적인 처리 후, 적절한 성공 메시지를 반환합니다.
+        return res.json({ message: "인증 코드가 이메일로 전송되었습니다." });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "서버 오류" });
     }
 };
+
 
 // 인증 코드 검증
 exports.verifyCode = async (req, res) => {
@@ -205,15 +206,14 @@ exports.verifyCode = async (req, res) => {
     }
 };
 
-//인증코드 전송(회원가입 시)
+// 인증 코드 전송(회원가입 시)
 const verificationCodes = {};  // 인증 코드 저장 (메모리)
-// 인증 코드 전송(비밀번호 찾기, 재전송 시)
 exports.regSendVerificationCode = async (req, res) => {
     const { email } = req.body;
 
     try {
         // 인증 코드 생성 및 이메일 전송
-        const { verificationCodes, verificationExpiration } = await sendVerificationEmail(email);
+        const { verificationCode, verificationExpiration } = await sendVerificationEmail(email);
 
         // 인증 코드와 만료 시간 메모리에 저장
         verificationCodes[email] = { code: verificationCode, expiresAt: verificationExpiration };
@@ -225,6 +225,7 @@ exports.regSendVerificationCode = async (req, res) => {
         return res.status(500).json({ message: "서버 오류" });
     }
 };
+
 
 //인증 코드 검증(회원가입 시)
 exports.regVerifyCode = async (req, res) => {
