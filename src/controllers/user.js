@@ -111,34 +111,22 @@ exports.findPassword = async (req, res) => {
 
 // 비밀번호 재설정 (인증코드 검증 완료된 후 실행)
 exports.resetPassword = async (req, res) => {
-    const { newPassword, passwordCheck } = req.body;
+    const { email, newPassword, passwordCheck } = req.body;
 
-        // 비밀번호와 비밀번호 확인이 일치하는지 검사
+    // 비밀번호와 비밀번호 확인이 일치하는지 검사
     if (newPassword !== passwordCheck) {
         return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
     }
 
-    // 이메일 찾기
     try {
-        // JWT 토큰을 Authorization 헤더에서 바로 추출
-        const token = req.headers.authorization;
-
-        if (!token) {
-            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
-        }
-
-        // JWT 토큰 검증
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
-
-
         // 사용자 찾기
-        const user = await User.findOne({ where: { id: decoded.id } });
+        const user = await User.findOne({ where: { email } });
 
         if (!user) {
             return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
 
-        // 인증 코드가 이미 확인된 상태인지 체크 (verifyCode에서 null로 설정됨)
+        // 인증 코드가 이미 확인된 상태인지 체크
         if (user.verificationCode !== null) {
             return res.status(400).json({ message: "인증 코드 확인이 필요합니다." });
         }
@@ -150,7 +138,6 @@ exports.resetPassword = async (req, res) => {
         await user.update({ password: hashedPassword });
 
         return res.json({ message: "비밀번호 재설정이 완료되었습니다." });
-
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "서버 오류" });
@@ -184,21 +171,11 @@ exports.sendVerificationCode = async (req, res) => {
 
 // 인증 코드 검증
 exports.verifyCode = async (req, res) => {
-    const { verificationCode } = req.body;
+    const { email, verificationCode } = req.body;
 
     try {
-        // JWT 토큰을 Authorization 헤더에서 추출
-        const token = req.headers.authorization;
-
-        if (!token) {
-            return res.status(401).json({ message: "토큰이 제공되지 않았습니다." });
-        }
-
-        // JWT 토큰 검증
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // JWT 토큰 검증
-
         // 사용자 찾기
-        const user = await User.findOne({ where: { id: decoded.id } });
+        const user = await User.findOne({ where: { email } });
         if (!user) {
             return res.status(400).json({ message: "존재하지 않는 사용자입니다." });
         }
@@ -210,7 +187,7 @@ exports.verifyCode = async (req, res) => {
 
         // 인증 코드 만료 확인
         if (new Date() > new Date(user.verificationExpiresAt)) {
-            return res.status(400).json({ message: "인증 코드가 만료되었습니다." })
+            return res.status(400).json({ message: "인증 코드가 만료되었습니다." });
         }
 
         // 인증 성공 시, 인증 코드 무효화 (더 이상 재사용 불가)
@@ -234,7 +211,7 @@ exports.regSendVerificationCode = async (req, res) => {
 
     try {
         // 인증 코드 생성 및 이메일 전송
-        const { verificationCode, verificationExpiration } = await sendVerificationEmail(email);
+        const { verificationCodes, verificationExpiration } = await sendVerificationEmail(email);
 
         // 인증 코드와 만료 시간 메모리에 저장
         verificationCodes[email] = { code: verificationCode, expiresAt: verificationExpiration };
@@ -252,7 +229,7 @@ exports.regVerifyCode = async (req, res) => {
     const { email, verificationCode } = req.body;
 
     try {
-        
+
         if (!email) {
             return res.status(400).json({ message: "이메일이 제공되지 않았습니다." });
         }
