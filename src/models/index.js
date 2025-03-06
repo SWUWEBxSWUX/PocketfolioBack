@@ -15,10 +15,14 @@ const Tag = require("../db/tag")(sequelize, DataTypes);
 const Attachment = require("../db/attachment")(sequelize, DataTypes);
 const PortfolioView = require("../db/portfolioView")(sequelize, DataTypes);
 const Color = require("../db/color")(sequelize, DataTypes); // ✅ 수정된 Color 모델 불러오기
+const Follow = require("../db/followers")(sequelize, DataTypes);
+
+const Education = require("../db/education")(sequelize, DataTypes);
+const Activity = require("../db/activity")(sequelize, DataTypes);
 
 // 관계 정의
-User.hasMany(Portfolio, { foreignKey: "userId" , onDelete: 'CASCADE'});
-Portfolio.belongsTo(User, { foreignKey: "userId", onDelete: 'CASCADE' });
+User.hasMany(Portfolio, { foreignKey: "userId", onDelete: "CASCADE" });
+Portfolio.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
 
 User.hasMany(PortfolioBookmark, { foreignKey: "userId" });
 PortfolioBookmark.belongsTo(User, { foreignKey: "userId" });
@@ -50,4 +54,7 @@ module.exports = {
   Attachment,
   Color,
   PortfolioView,
+  Follow,
+  Education,
+  Activity,
 };
