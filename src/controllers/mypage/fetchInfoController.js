@@ -12,23 +12,13 @@ const {
 // 🛠 JWT 미들웨어 추가
 const jwt = require("jsonwebtoken");
 
-// 📌 사용자 정보 조회 (마이페이지)
+// 📌 마이페이지 개인정보 가져오기
 exports.fetchMypageInfo = async (req, res) => {
   try {
-    // 🔹 요청 헤더에서 토큰 검증
-    if (!req.headers.authorization) {
-      return res.status(401).json({ message: "인증 토큰이 필요합니다." });
-    }
-
-    const token = req.headers.authorization.replace("Bearer ", ""); // "Bearer " 제거
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // 🔹 req.user에 저장
-
-    const { userId } = req.params;
-    const loginUserId = req.user.id; // ✅ 로그인된 사용자 ID
+    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
 
     // 사용자 정보 조회
-    const user = await User.findByPk(userId, {
+    const user = await User.findByPk(loginUserId, {
       attributes: ["name", "introduce"],
     });
 
@@ -36,23 +26,23 @@ exports.fetchMypageInfo = async (req, res) => {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    const isMine = parseInt(userId) === loginUserId;
-
     // 팔로워 / 팔로잉 개수 조회
-    const followerCount = await Follow.count({ where: { user_id: userId } });
+    const followerCount = await Follow.count({
+      where: { user_id: loginUserId },
+    });
     const followingCount = await Follow.count({
-      where: { follower_id: userId },
+      where: { follower_id: loginUserId },
     });
 
     // 학력 정보 조회
-    const education = await Education.findAll({
-      where: { user_id: userId },
+    const education = await Education.findOne({
+      where: { user_id: loginUserId },
       attributes: ["school", "status", "startDate", "endDate"],
     });
 
     // 활동 정보 조회
     const activities = await Activity.findAll({
-      where: { user_id: userId },
+      where: { user_id: loginUserId },
       attributes: ["activityName", "startDate", "endDate"],
     });
 
@@ -61,7 +51,6 @@ exports.fetchMypageInfo = async (req, res) => {
       follower: followerCount,
       following: followingCount,
       introduce: user.introduce,
-      isMine,
       education,
       activities,
     });
@@ -71,17 +60,17 @@ exports.fetchMypageInfo = async (req, res) => {
   }
 };
 
-// 📌 마이페이지에서 포트폴리오 조회
+// 📌 마이페이지 포트폴리오 조회
 exports.fetchPortfolioInfo = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
 
     const portfolios = await Portfolio.findAll({
-      where: { userId },
+      where: { userId: loginUserId },
       attributes: ["id", "title", "coverImage", "views"],
     });
 
-    res.json({ userId, portfolios });
+    res.json({ userId: loginUserId, portfolios });
   } catch (error) {
     console.error("🚨 fetchPortfolioInfo 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
@@ -91,17 +80,17 @@ exports.fetchPortfolioInfo = async (req, res) => {
 // 📌 사용자가 북마크한 포트폴리오 조회
 exports.fetchUserBookmarks = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
 
     const bookmarks = await PortfolioBookmark.findAll({
-      where: { userId },
+      where: { userId: loginUserId },
       attributes: ["portfolioId"],
     });
 
     const bookmarkedPortfolioIds = bookmarks.map((b) => b.portfolioId);
 
     if (bookmarkedPortfolioIds.length === 0) {
-      return res.json({ userId, portfolios: [] });
+      return res.json({ userId: loginUserId, portfolios: [] });
     }
 
     const portfolios = await Portfolio.findAll({
@@ -127,7 +116,7 @@ exports.fetchUserBookmarks = async (req, res) => {
       group: ["Portfolio.id", "author.id"],
     });
 
-    res.json({ userId, portfolios });
+    res.json({ userId: loginUserId, portfolios });
   } catch (error) {
     console.error("🚨 fetchUserBookmarks 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
@@ -137,27 +126,17 @@ exports.fetchUserBookmarks = async (req, res) => {
 // 📌 사용자가 좋아요한 포트폴리오 조회
 exports.fetchUserLikedPortfolios = async (req, res) => {
   try {
-    // 🔹 요청 헤더에서 토큰 검증
-    if (!req.headers.authorization) {
-      return res.status(401).json({ message: "인증 토큰이 필요합니다." });
-    }
-
-    const token = req.headers.authorization.replace("Bearer ", "");
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-
-    const { userId } = req.params;
-    const loginUserId = req.user.id;
+    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
 
     const likes = await PortfolioLike.findAll({
-      where: { userId },
+      where: { userId: loginUserId },
       attributes: ["portfolioId"],
     });
 
     const likedPortfolioIds = likes.map((l) => l.portfolioId);
 
     if (likedPortfolioIds.length === 0) {
-      return res.json({ userId, portfolios: [] });
+      return res.json({ userId: loginUserId, portfolios: [] });
     }
 
     const portfolios = await Portfolio.findAll({
@@ -191,7 +170,7 @@ exports.fetchUserLikedPortfolios = async (req, res) => {
       portfolio.dataValues.isBookmarked = bookmarked ? true : false;
     }
 
-    res.json({ userId, portfolios });
+    res.json({ userId: loginUserId, portfolios });
   } catch (error) {
     console.error("🚨 fetchUserLikedPortfolios 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
