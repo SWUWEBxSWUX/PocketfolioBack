@@ -1,29 +1,22 @@
 const express = require("express");
+const router = express.Router();
+
 const mypageFetchController = require("../controllers/mypage/fetchInfoController");
 const mypageEditController = require("../controllers/mypage/editInfoController");
 
-const router = express.Router();
+const { verifyToken } = require("../middlewares/index"); // ✅ 인증 미들웨어 추가
 
-// 마이페이지 개인정보 가져오기
-router.get("/mypage/fetchInfo/:userId", mypageFetchController.fetchMypageInfo);
-
-//마이페이지 북마크한 포트폴리오 가져오기
+// ✅ 모든 요청에 `verifyToken` 미들웨어 적용
+router.get("/fetchInfo", verifyToken, mypageFetchController.fetchMypageInfo);
+router.get("/portfolio", verifyToken, mypageFetchController.fetchPortfolioInfo);
 router.get(
-  "/mypage/portfolio/:userId",
-  verifyToken,
-  mypageFetchController.fetchPortfolioInfo
-);
-
-// 마이페이지 좋아요 표시한 포트폴리오 가져오기
-router.get(
-  "/mypage/likes/:userId",
+  "/likes",
   verifyToken,
   mypageFetchController.fetchUserLikedPortfolios
 );
-
-//마이페이지 수정
-router.patch(
-  "/mypage/profile/save",
+router.get("/bookmark", verifyToken, mypageFetchController.fetchUserBookmarks);
+router.post(
+  "/profile/save",
   verifyToken,
   mypageEditController.updateUserProfile
 );

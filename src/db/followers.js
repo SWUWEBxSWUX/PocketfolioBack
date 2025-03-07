@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
   const Follow = sequelize.define(
-    "Follow",
+    "Follows",
     {
       follows_id: {
         type: DataTypes.BIGINT,
