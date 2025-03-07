@@ -1,5 +1,6 @@
 const { Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Comment } = require('../models');
 const s3Service = require('./s3Service');
+const axios = require('axios');
 
 /** 🔹 포트폴리오 생성 */
 exports.createPortfolio = async (userId, data, file) => {
@@ -20,6 +21,7 @@ exports.createPortfolio = async (userId, data, file) => {
     job: data.job,
     company: data.company,
     description: data.description,
+    url: data.url, // 추가된 URL 필드
     coverImage: coverImageUrl,
   });
 
@@ -226,7 +228,40 @@ exports.uploadAttachments = async (files) => {
 };
 
 /** 🔹 직군 리스트 조회 */
-exports.getJobList = async () => {
-  return ['프론트엔드 개발자', '백엔드 개발자', '데이터 엔지니어', 'UI/UX 디자이너', '그래픽 디자이너'];
-};
+exports.getCompanyList = async (query) => {
+  const serviceKey = process.env.DATA_GO_KR_API_KEY; // 공공데이터포털 인증키
+  const apiUrl = 'http://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getAffiliate_V2';
 
+  // 요청 파라미터 구성
+  const params = {
+    pageNo: 1,
+    numOfRows: 10,
+    resultType: 'json',
+    fnccmpNm: query,  // 전달받은 검색어 사용
+    serviceKey: serviceKey,
+  };
+
+  try {
+    const response = await axios.get(apiUrl, { params });
+    let companies = [];
+
+    // API 응답 구조에 따라 회사명 추출
+    if (
+      response.data &&
+      response.data.response &&
+      response.data.response.body &&
+      response.data.response.body.items
+    ) {
+      const items = response.data.response.body.items;
+      if (Array.isArray(items.item)) {
+        companies = items.item.map(item => item.corpNm);
+      } else if (items.item) {
+        companies.push(items.item.corpNm);
+      }
+    }
+    return companies;
+  } catch (error) {
+    console.error('Error fetching company list:', error);
+    return [];
+  }
+};

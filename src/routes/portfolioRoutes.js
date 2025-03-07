@@ -37,7 +37,7 @@ router.post('/upload-cover', verifyToken, upload.single('coverImage'), portfolio
 /** 🔹 첨부파일 업로드 */
 router.post('/upload-attachments', verifyToken, upload.array('files'), portfolioController.uploadAttachments);
 
-/** 🔹 직군 리스트 조회 */
-router.get('/jobs', portfolioController.getJobList);
+/** 🔹 회사 정보 조회 엔드포인트: 쿼리 파라미터 q를 통해 검색어 전달 */
+router.get('/companies', portfolioController.getCompanyList);
 
 module.exports = router;
