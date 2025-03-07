@@ -81,3 +81,61 @@ exports.updateUserProfile = async (req, res) => {
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
 };
+const axios = require("axios");
+
+const API_KEY = process.env.CAREER_API_KEY; // 환경 변수로 API 키 관리
+
+exports.searchUniversity = async (req, res) => {
+  const { gubun, searchSchulNm } = req.query; // 학교 종류와 검색어 받기
+
+  // 필수 입력값 검증
+  if (!gubun || !searchSchulNm) {
+    return res
+      .status(400)
+      .json({ error: "학교 종류와 검색어를 입력해주세요." });
+  }
+
+  // 유효한 학교 종류인지 확인
+  const validGubunValues = [
+    "elem_list",
+    "midd_list",
+    "high_list",
+    "univ_list",
+    "seet_list",
+    "alte_list",
+  ];
+  if (!validGubunValues.includes(gubun)) {
+    return res.status(400).json({ error: "올바른 학교 종류를 입력해주세요." });
+  }
+
+  // API 요청 URL (JSON 데이터로 요청)
+  const url = `http://www.career.go.kr/cnet/openapi/getOpenApi.json?apiKey=${API_KEY}
+&svcType=api
+&svcCode=SCHOOL
+&gubun=${gubun}
+&searchSchulNm=${encodeURIComponent(searchSchulNm)}
+&perPage=5
+&thisPage=1
+&contentType=json`; // 🔹 JSON 응답 받도록 설정
+
+  try {
+    const response = await axios.get(url);
+    const schools = response.data.dataSearch?.content || [];
+
+    // 검색 결과가 없을 경우
+    if (schools.length === 0) {
+      return res.status(404).json({ message: "검색된 학교가 없습니다." });
+    }
+
+    // 🔹 학교명과 주소만 리스트로 변환하여 반환
+    const result = schools.map((school) => ({
+      name: school.schoolName, // 학교명
+      address: school.adres, // 주소
+    }));
+
+    res.json({ universities: result });
+  } catch (error) {
+    console.error("🚨 API 요청 중 오류 발생:", error);
+    res.status(500).json({ error: "서버 오류가 발생했습니다." });
+  }
+};
