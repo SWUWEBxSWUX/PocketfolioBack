@@ -11,7 +11,6 @@ const {
 
 // 🛠 JWT 미들웨어 추가
 const jwt = require("jsonwebtoken");
-
 // 📌 마이페이지 개인정보 가져오기
 exports.fetchMypageInfo = async (req, res) => {
   try {
@@ -19,7 +18,7 @@ exports.fetchMypageInfo = async (req, res) => {
 
     // 사용자 정보 조회
     const user = await User.findByPk(loginUserId, {
-      attributes: ["name", "introduce"],
+      attributes: ["id", "name", "introduce"], // ✅ user_id 포함
     });
 
     if (!user) {
@@ -34,25 +33,26 @@ exports.fetchMypageInfo = async (req, res) => {
       where: { follower_id: loginUserId },
     });
 
-    // 학력 정보 조회
+    // ✅ 학력 정보 조회 (education_id 포함)
     const education = await Education.findOne({
       where: { user_id: loginUserId },
-      attributes: ["school", "status", "startDate", "endDate"],
+      attributes: ["education_id", "school", "status", "startDate", "endDate"], // ✅ education_id 추가
     });
 
-    // 활동 정보 조회
+    // ✅ 활동 정보 조회 (activity_id 포함)
     const activities = await Activity.findAll({
       where: { user_id: loginUserId },
-      attributes: ["activityName", "startDate", "endDate"],
+      attributes: ["activity_id", "activityName", "startDate", "endDate"], // ✅ activity_id 추가
     });
 
     res.json({
+      user_id: user.id, // ✅ 프론트엔드에서 `user_id` 사용 가능
       name: user.name,
+      introduce: user.introduce,
       follower: followerCount,
       following: followingCount,
-      introduce: user.introduce,
-      education,
-      activities,
+      education, // ✅ education_id 포함된 학력 정보 반환
+      activities, // ✅ activity_id 포함된 활동 정보 반환
     });
   } catch (error) {
     console.error("🚨 fetchMypageInfo 오류:", error);
