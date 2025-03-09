@@ -20,5 +20,6 @@ router.post(
   verifyToken,
   mypageEditController.updateUserProfile
 );
+router.get("/searchUniversity", mypageEditController.searchUniversity);
 
 module.exports = router;
