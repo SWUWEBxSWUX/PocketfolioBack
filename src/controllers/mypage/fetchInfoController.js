@@ -11,6 +11,9 @@ const {
 
 // 🛠 JWT 미들웨어 추가
 const jwt = require("jsonwebtoken");
+const formatDate = (date) =>
+  date ? new Date(date).toISOString().split("T")[0] : null;
+
 // 📌 마이페이지 개인정보 가져오기
 exports.fetchMypageInfo = async (req, res) => {
   try {
@@ -33,17 +36,31 @@ exports.fetchMypageInfo = async (req, res) => {
       where: { follower_id: loginUserId },
     });
 
-    // ✅ 학력 정보 조회 (education_id 포함)
+    // ✅ 학력 정보 조회 (education_id 포함, 날짜 변환 적용)
     const education = await Education.findOne({
       where: { user_id: loginUserId },
       attributes: ["education_id", "school", "status", "startDate", "endDate"], // ✅ education_id 추가
     });
 
-    // ✅ 활동 정보 조회 (activity_id 포함)
+    const formattedEducation = education
+      ? {
+          ...education.toJSON(),
+          startDate: formatDate(education.startDate), // ✅ 날짜 변환
+          endDate: formatDate(education.endDate), // ✅ 날짜 변환
+        }
+      : null;
+
+    // ✅ 활동 정보 조회 (activity_id 포함, 날짜 변환 적용)
     const activities = await Activity.findAll({
       where: { user_id: loginUserId },
       attributes: ["activity_id", "activityName", "startDate", "endDate"], // ✅ activity_id 추가
     });
+
+    const formattedActivities = activities.map((activity) => ({
+      ...activity.toJSON(),
+      startDate: formatDate(activity.startDate), // ✅ 날짜 변환
+      endDate: formatDate(activity.endDate), // ✅ 날짜 변환
+    }));
 
     res.json({
       user_id: user.id, // ✅ 프론트엔드에서 `user_id` 사용 가능
@@ -51,8 +68,8 @@ exports.fetchMypageInfo = async (req, res) => {
       introduce: user.introduce,
       follower: followerCount,
       following: followingCount,
-      education, // ✅ education_id 포함된 학력 정보 반환
-      activities, // ✅ activity_id 포함된 활동 정보 반환
+      education: formattedEducation, // ✅ 날짜 변환 적용
+      activities: formattedActivities, // ✅ 날짜 변환 적용
     });
   } catch (error) {
     console.error("🚨 fetchMypageInfo 오류:", error);
