@@ -3,13 +3,13 @@ const portfolioService = require('../services/portfolioService');
 /** 🔹 포트폴리오 생성 */
 exports.createPortfolio = async (req, res) => {
   try {
-    console.log("📌 `res.locals.decoded` 값:", res.locals.decoded); // ✅ 확인용 로그 추가
-    if (!res.locals.decoded) {
+    console.log("📌 `req.user` 값:", req.user); // ✅ 확인용 로그 추가
+    if (!req.user) {
       return res.status(401).json({ message: "인증 정보가 없습니다." });
     }
 
     const { title, durationStart, durationEnd, role, job, company, description, tags, url} = req.body;
-    const userId = res.locals.decoded.id
+    const userId = req.user.id;
     const file = req.file; // 표지 이미지 (선택 사항)
     const attachments = req.files ? req.files.map(file => file.location) : [];
 
