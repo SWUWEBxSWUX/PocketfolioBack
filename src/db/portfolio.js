@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       job: { type: DataTypes.STRING(50), allowNull: false },
       company: { type: DataTypes.STRING(100), allowNull: true },
       description: { type: DataTypes.TEXT, allowNull: true },
+      url: { type: DataTypes.TEXT, allowNull: true }, // 추가된 URL 필드
       coverImage: { type: DataTypes.STRING(255), allowNull: true },
       views: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
       createdAt: {

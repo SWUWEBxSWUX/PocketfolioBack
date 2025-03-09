@@ -22,12 +22,15 @@ exports.getPopularTags = async (req, res) => {
 };
 
 
-// 2. 직군 리스트 조회
-exports.getJobCategories = (req, res) => {
+// 2. 직군(회사) 리스트 조회 → 금융위원회 API 활용
+exports.getJobCategories = async (req, res) => {
   try {
-    const categories = homeService.getJobCategories();
-    res.status(200).json({ data: categories });
+    // 프론트엔드에서 쿼리 파라미터 'q'로 검색어 전달, 없으면 기본값 사용
+    const query = req.query.q || '메리츠자산운용';
+    const companies = await homeService.getJobCategories(query);
+    res.status(200).json({ data: companies });
   } catch (error) {
+    console.error('Error in getJobCategories:', error);
     res.status(500).json({ message: '서버 오류' });
   }
 };

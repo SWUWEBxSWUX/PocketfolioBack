@@ -3,12 +3,13 @@ const portfolioService = require('../services/portfolioService');
 /** 🔹 포트폴리오 생성 */
 exports.createPortfolio = async (req, res) => {
   try {
-    if (!req.user) {
+    console.log("📌 `res.locals.decoded` 값:", res.locals.decoded); // ✅ 확인용 로그 추가
+    if (!res.locals.decoded) {
       return res.status(401).json({ message: "인증 정보가 없습니다." });
     }
 
-    const { title, durationStart, durationEnd, role, job, company, description, tags } = req.body;
-    const userId = req.user.id;
+    const { title, durationStart, durationEnd, role, job, company, description, tags, url} = req.body;
+    const userId = res.locals.decoded.id
     const file = req.file; // 표지 이미지 (선택 사항)
     const attachments = req.files ? req.files.map(file => file.location) : [];
 
@@ -21,6 +22,7 @@ exports.createPortfolio = async (req, res) => {
       company,
       description,
       tags,
+      url,
       attachments,
     }, file);
 
@@ -180,13 +182,16 @@ exports.uploadAttachments = async (req, res) => {
   }
 };
 
-/** 🔹 직군 리스트 조회 */
-exports.getJobList = async (req, res) => {
+/** 🔹 직군 조회 */
+exports.getCompanyList = async (req, res) => {
   try {
-    const jobs = await portfolioService.getJobList();
-    res.status(200).json({ data: jobs });
+    // 쿼리 파라미터로 검색어 전달받기, 없으면 기본값 '메리츠자산운용' 사용
+    const query = req.query.q || '메리츠자산운용';
+    const companies = await portfolioService.getCompanyList(query);
+    res.status(200).json({ companies });
   } catch (error) {
-    console.error('Error fetching job list:', error);
-    res.status(500).json({ message: '직군 리스트 조회 중 오류가 발생했습니다.' });
+    console.error('Error fetching company list:', error);
+    res.status(500).json({ message: '회사 정보 조회 중 오류가 발생했습니다.' });
   }
 };
+
