@@ -11,11 +11,31 @@ module.exports = (sequelize, DataTypes) => {
       status: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        comment: "저학, 휴학, 졸업 등",
+        comment: "재학, 휴학, 졸업 등",
       },
-      startDate: { type: DataTypes.DATE, allowNull: false, comment: "입학일" },
-      endDate: { type: DataTypes.DATE, allowNull: false, comment: "졸업일" },
+      startDate: {
+        type: DataTypes.STRING(4), // ✅ YYYY 형식으로 저장
+        allowNull: false,
+        comment: "입학년도 (YYYY)",
+      },
+      endDate: {
+        type: DataTypes.STRING(4), // ✅ YYYY 형식으로 저장
+        allowNull: true, // 현재 재학 중일 경우 null 허용
+        comment: "졸업년도 (YYYY)",
+      },
       user_id: { type: DataTypes.BIGINT, allowNull: false },
+      educationType: {
+        type: DataTypes.ENUM(
+          "elem_list",
+          "midd_list",
+          "high_list",
+          "univ_list",
+          "seet_list",
+          "alte_list"
+        ),
+        allowNull: false,
+        comment: "학력 구분 (초등, 중등, 고등, 대학교, 전문대, 대안학교 등)",
+      },
     },
     {
       tableName: "Education",

@@ -21,5 +21,10 @@ router.post(
   mypageEditController.updateUserProfile
 );
 router.get("/searchUniversity", mypageEditController.searchUniversity);
+router.delete(
+  "/activitydelete",
+  verifyToken,
+  mypageEditController.deleteActivity
+);
 
 module.exports = router;

@@ -11,24 +11,31 @@ const {
 
 // 🛠 JWT 미들웨어 추가
 const jwt = require("jsonwebtoken");
-const formatDate = (date) =>
-  date ? new Date(date).toISOString().split("T")[0] : null;
 
-// 📌 마이페이지 개인정보 가져오기
+const formatYear = (date, isEndDate = false) => {
+  if (!date) return isEndDate ? "현재" : null;
+  return new Date(date).getFullYear().toString(); // 연도만 반환
+};
+
+//활동(activity) 날짜 변환
+const formatDate = (date) => {
+  return date ? new Date(date).toISOString().split("T")[0] : "현재"; //YYYY-MM-DD 변환
+};
+
 exports.fetchMypageInfo = async (req, res) => {
   try {
-    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
+    const loginUserId = req.user.id;
 
-    // 사용자 정보 조회
+    //사용자 정보 조회
     const user = await User.findByPk(loginUserId, {
-      attributes: ["id", "name", "introduce"], // ✅ user_id 포함
+      attributes: ["id", "name", "introduce"],
     });
 
     if (!user) {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    // 팔로워 / 팔로잉 개수 조회
+    // ✅ 팔로워 / 팔로잉 개수 조회
     const followerCount = await Follow.count({
       where: { user_id: loginUserId },
     });
@@ -36,40 +43,49 @@ exports.fetchMypageInfo = async (req, res) => {
       where: { follower_id: loginUserId },
     });
 
-    // ✅ 학력 정보 조회 (education_id 포함, 날짜 변환 적용)
+    // ✅ 학력 정보 조회 (YYYY 형식 유지)
     const education = await Education.findOne({
       where: { user_id: loginUserId },
-      attributes: ["education_id", "school", "status", "startDate", "endDate"], // ✅ education_id 추가
+      attributes: [
+        "education_id",
+        "school",
+        "status",
+        "startDate",
+        "endDate",
+        "educationType",
+      ],
     });
 
     const formattedEducation = education
       ? {
           ...education.toJSON(),
-          startDate: formatDate(education.startDate), // ✅ 날짜 변환
-          endDate: formatDate(education.endDate), // ✅ 날짜 변환
+          startDate: formatYear(education.startDate), // ✅ YYYY 형식으로 변환
+          endDate: education.endDate
+            ? formatYear(education.endDate, true)
+            : "현재",
         }
       : null;
 
-    // ✅ 활동 정보 조회 (activity_id 포함, 날짜 변환 적용)
+    // 활동 정보 조회 YYYY-MM-DD 형식
     const activities = await Activity.findAll({
       where: { user_id: loginUserId },
-      attributes: ["activity_id", "activityName", "startDate", "endDate"], // ✅ activity_id 추가
+      attributes: ["activity_id", "activityName", "startDate", "endDate"],
     });
 
     const formattedActivities = activities.map((activity) => ({
       ...activity.toJSON(),
-      startDate: formatDate(activity.startDate), // ✅ 날짜 변환
-      endDate: formatDate(activity.endDate), // ✅ 날짜 변환
+      startDate: formatDate(activity.startDate), // ✅ YYYY-MM-DD 변환
+      endDate: activity.endDate ? formatDate(activity.endDate) : "현재", // ✅ null이면 "현재"
     }));
 
     res.json({
-      user_id: user.id, // ✅ 프론트엔드에서 `user_id` 사용 가능
+      user_id: user.id,
       name: user.name,
       introduce: user.introduce,
       follower: followerCount,
       following: followingCount,
-      education: formattedEducation, // ✅ 날짜 변환 적용
-      activities: formattedActivities, // ✅ 날짜 변환 적용
+      education: formattedEducation,
+      activities: formattedActivities,
     });
   } catch (error) {
     console.error("🚨 fetchMypageInfo 오류:", error);
@@ -77,10 +93,10 @@ exports.fetchMypageInfo = async (req, res) => {
   }
 };
 
-// 📌 마이페이지 포트폴리오 조회
+//마이페이지 포트폴리오 조회
 exports.fetchPortfolioInfo = async (req, res) => {
   try {
-    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
+    const loginUserId = req.user.id; // JWT에서 userId 가져오기
 
     const portfolios = await Portfolio.findAll({
       where: { userId: loginUserId },
@@ -97,7 +113,7 @@ exports.fetchPortfolioInfo = async (req, res) => {
 // 📌 사용자가 북마크한 포트폴리오 조회
 exports.fetchUserBookmarks = async (req, res) => {
   try {
-    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
+    const loginUserId = req.user.id; // JWT에서 userId 가져오기
 
     const bookmarks = await PortfolioBookmark.findAll({
       where: { userId: loginUserId },
@@ -140,10 +156,10 @@ exports.fetchUserBookmarks = async (req, res) => {
   }
 };
 
-// 📌 사용자가 좋아요한 포트폴리오 조회
+//사용자가 좋아요한 포트폴리오 조회
 exports.fetchUserLikedPortfolios = async (req, res) => {
   try {
-    const loginUserId = req.user.id; // ✅ JWT에서 userId 가져오기
+    const loginUserId = req.user.id; //JWT에서 userId 가져오기
 
     const likes = await PortfolioLike.findAll({
       where: { userId: loginUserId },
