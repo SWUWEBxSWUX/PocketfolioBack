@@ -3,9 +3,9 @@ const { User, Education, Activity } = require("../../models");
 
 //날짜 함수
 const formatDateForEducation = (date, isEndDate = false) => {
-  if (date === "현재") return "현재"; // ✅ '현재'는 그대로 저장
-  if (!date) return isEndDate ? null : null; // ✅ null은 유지
-  return date.toString(); // ✅ YYYY 형식 유지
+  if (date === "현재") return "현재";
+  if (!date) return isEndDate ? null : null;
+  return date.toString();
 };
 
 exports.updateUserProfile = async (req, res) => {
@@ -13,11 +13,11 @@ exports.updateUserProfile = async (req, res) => {
 
   try {
     let user = await User.findByPk(userId);
-    console.log("📢 받은 요청 데이터:", req.body); // ✅ 전체 요청 데이터 확인
+    console.log("📢 받은 요청 데이터:", req.body);
     console.log("📢 받은 학력 데이터:", education);
 
     if (education) {
-      console.log("📢 받은 educationType:", education.educationType); // ✅ educationType이 정상적으로 들어오는지 확인
+      console.log("📢 받은 educationType:", education.educationType);
     }
 
     // 사용자 정보 추가 또는 수정
