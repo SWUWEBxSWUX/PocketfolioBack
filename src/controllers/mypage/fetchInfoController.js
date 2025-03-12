@@ -100,22 +100,7 @@ exports.fetchPortfolioInfo = async (req, res) => {
 
     const portfolios = await Portfolio.findAll({
       where: { userId: loginUserId },
-      attributes: [
-        "id",
-        "title",
-        "coverImage",
-        "views",
-        [sequelize.fn("COUNT", sequelize.col("likes.id")), "likes"],
-      ],
-      include: [
-        {
-          model: PortfolioLike,
-          as: "likes",
-          attributes: [],
-          required: false,
-        },
-      ],
-      group: ["Portfolio.id"],
+      attributes: ["id", "title", "coverImage", "views", "likesCount"],
     });
 
     res.json({ userId: loginUserId, portfolios });
@@ -128,7 +113,7 @@ exports.fetchPortfolioInfo = async (req, res) => {
 // 사용자가 북마크한 포트폴리오 조회
 exports.fetchUserBookmarks = async (req, res) => {
   try {
-    const loginUserId = req.user.id; // JWT에서 userId 가져오기
+    const loginUserId = req.user.id;
 
     const bookmarks = await PortfolioBookmark.findAll({
       where: { userId: loginUserId },
@@ -143,26 +128,14 @@ exports.fetchUserBookmarks = async (req, res) => {
 
     const portfolios = await Portfolio.findAll({
       where: { id: bookmarkedPortfolioIds },
-      attributes: ["id", "title", "coverImage", "views"],
+      attributes: ["id", "title", "coverImage", "views", "likesCount"],
       include: [
-        {
-          model: PortfolioLike,
-          as: "likes",
-          attributes: [
-            [
-              sequelize.fn("COUNT", sequelize.col("PortfolioLikes.id")),
-              "likes",
-            ],
-          ],
-          required: false,
-        },
         {
           model: User,
           as: "author",
           attributes: ["id", "name"],
         },
       ],
-      group: ["Portfolio.id", "author.id"],
     });
 
     res.json({ userId: loginUserId, portfolios });
@@ -175,7 +148,7 @@ exports.fetchUserBookmarks = async (req, res) => {
 //사용자가 좋아요한 포트폴리오 조회
 exports.fetchUserLikedPortfolios = async (req, res) => {
   try {
-    const loginUserId = req.user.id; //JWT에서 userId 가져오기
+    const loginUserId = req.user.id;
 
     const likes = await PortfolioLike.findAll({
       where: { userId: loginUserId },
@@ -190,26 +163,14 @@ exports.fetchUserLikedPortfolios = async (req, res) => {
 
     const portfolios = await Portfolio.findAll({
       where: { id: likedPortfolioIds },
-      attributes: ["id", "title", "coverImage", "views"],
+      attributes: ["id", "title", "coverImage", "views", "likesCount"],
       include: [
-        {
-          model: PortfolioLike,
-          as: "likes",
-          attributes: [
-            [
-              sequelize.fn("COUNT", sequelize.col("PortfolioLikes.id")),
-              "likes",
-            ],
-          ],
-          required: false,
-        },
         {
           model: User,
           as: "author",
           attributes: ["id", "name"],
         },
       ],
-      group: ["Portfolio.id", "author.id"],
     });
 
     for (const portfolio of portfolios) {

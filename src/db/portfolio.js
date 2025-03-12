@@ -13,6 +13,11 @@ module.exports = (sequelize, DataTypes) => {
       description: { type: DataTypes.TEXT, allowNull: true },
       coverImage: { type: DataTypes.STRING(255), allowNull: true },
       views: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+      likesCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       createdAt: {
         type: DataTypes.DATE,
         allowNull: true,
