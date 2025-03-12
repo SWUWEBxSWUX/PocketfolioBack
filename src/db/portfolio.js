@@ -26,5 +26,12 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+  Portfolio.associate = (models) => {
+    Portfolio.hasMany(models.PortfolioLike, {
+      foreignKey: "portfolioId",
+      as: "likes",
+    });
+  };
+
   return Portfolio;
 };
