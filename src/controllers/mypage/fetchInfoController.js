@@ -9,7 +9,7 @@ const {
   sequelize,
 } = require("../../models");
 
-// 🛠 JWT 미들웨어 추가
+//JWT 미들웨어 추가
 const jwt = require("jsonwebtoken");
 
 const formatYear = (date, isEndDate = false) => {
@@ -35,7 +35,7 @@ exports.fetchMypageInfo = async (req, res) => {
       return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
     }
 
-    // ✅ 팔로워 / 팔로잉 개수 조회
+    //팔로워 / 팔로잉 개수 조회
     const followerCount = await Follow.count({
       where: { user_id: loginUserId },
     });
@@ -43,7 +43,7 @@ exports.fetchMypageInfo = async (req, res) => {
       where: { follower_id: loginUserId },
     });
 
-    // ✅ 학력 정보 조회 (YYYY 형식 유지)
+    // 학력 정보 조회 (YYYY 형식 유지)
     const education = await Education.findOne({
       where: { user_id: loginUserId },
       attributes: [
@@ -100,17 +100,32 @@ exports.fetchPortfolioInfo = async (req, res) => {
 
     const portfolios = await Portfolio.findAll({
       where: { userId: loginUserId },
-      attributes: ["id", "title", "coverImage", "views"],
+      attributes: [
+        "id",
+        "title",
+        "coverImage",
+        "views",
+        [sequelize.fn("COUNT", sequelize.col("likes.id")), "likes"],
+      ],
+      include: [
+        {
+          model: PortfolioLike,
+          as: "likes",
+          attributes: [],
+          required: false,
+        },
+      ],
+      group: ["Portfolio.id"],
     });
 
     res.json({ userId: loginUserId, portfolios });
   } catch (error) {
-    console.error("🚨 fetchPortfolioInfo 오류:", error);
+    console.error("fetchPortfolioInfo 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
 };
 
-// 📌 사용자가 북마크한 포트폴리오 조회
+// 사용자가 북마크한 포트폴리오 조회
 exports.fetchUserBookmarks = async (req, res) => {
   try {
     const loginUserId = req.user.id; // JWT에서 userId 가져오기
@@ -132,6 +147,7 @@ exports.fetchUserBookmarks = async (req, res) => {
       include: [
         {
           model: PortfolioLike,
+          as: "likes",
           attributes: [
             [
               sequelize.fn("COUNT", sequelize.col("PortfolioLikes.id")),
@@ -151,7 +167,7 @@ exports.fetchUserBookmarks = async (req, res) => {
 
     res.json({ userId: loginUserId, portfolios });
   } catch (error) {
-    console.error("🚨 fetchUserBookmarks 오류:", error);
+    console.error("fetchUserBookmarks 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
 };
@@ -178,6 +194,7 @@ exports.fetchUserLikedPortfolios = async (req, res) => {
       include: [
         {
           model: PortfolioLike,
+          as: "likes",
           attributes: [
             [
               sequelize.fn("COUNT", sequelize.col("PortfolioLikes.id")),
@@ -205,7 +222,7 @@ exports.fetchUserLikedPortfolios = async (req, res) => {
 
     res.json({ userId: loginUserId, portfolios });
   } catch (error) {
-    console.error("🚨 fetchUserLikedPortfolios 오류:", error);
+    console.error("fetchUserLikedPortfolios 오류:", error);
     res.status(500).json({ error: "서버 오류가 발생했습니다." });
   }
 };
