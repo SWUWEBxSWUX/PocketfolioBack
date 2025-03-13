@@ -35,9 +35,20 @@ exports.getJobCategories = async (query) => {
     ) {
       const items = response.data.response.body.items;
       if (Array.isArray(items.item)) {
-        companies = items.item.map(item => item.corpNm);
+        companies = items.item.map(item => {
+            // corpNm 값이 객체인 경우 '#text' 속성에서 값을 추출
+            if (item.corpNm && typeof item.corpNm === 'object') {
+                return item.corpNm['#text'] || null;
+          }
+          return item.corpNm;
+        });
       } else if (items.item) {
-        companies.push(items.item.corpNm);
+        const corpNm = items.item.corpNm;
+        companies.push(
+          (corpNm && typeof corpNm === 'object')
+            ? corpNm['#text'] || null
+            : corpNm
+        );
       }
     }
     return companies;
