@@ -36,6 +36,12 @@ Attachment.belongsTo(Portfolio, { foreignKey: "portfolioId" });
 Portfolio.hasMany(Color, { foreignKey: "portfolioId" });
 Color.belongsTo(Portfolio, { foreignKey: "portfolioId" });
 
+Portfolio.hasMany(PortfolioLike, { foreignKey: "portfolioId", as: "likes" });
+PortfolioLike.belongsTo(Portfolio, {
+  foreignKey: "portfolioId",
+  as: "portfolio",
+});
+
 Portfolio.belongsToMany(Tag, {
   through: PortfolioTag,
   foreignKey: "portfolioId",

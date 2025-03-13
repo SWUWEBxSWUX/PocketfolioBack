@@ -14,8 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "Portfolio_Likes",
       timestamps: false,
+      freezeTableName: true,
     }
   );
+
+  PortfolioLike.associate = (models) => {
+    PortfolioLike.belongsTo(models.Portfolio, {
+      foreignKey: "portfolioId",
+      as: "portfolio",
+    });
+  };
 
   return PortfolioLike;
 };
