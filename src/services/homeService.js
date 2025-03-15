@@ -14,7 +14,7 @@ exports.getJobCategories = async (query) => {
   const serviceKey = process.env.DATA_GO_KR_API_KEY; // 공공데이터포털 인증키
   const apiUrl = 'http://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getAffiliate_V2';
 
-  // 요청 파라미터 구성
+  // ✅ 요청 파라미터 구성
   const params = {
     pageNo: 1,
     numOfRows: 10,
@@ -29,52 +29,33 @@ exports.getJobCategories = async (query) => {
     // ✅ API 요청 URL 로그 추가
     const requestUrl = `${apiUrl}?pageNo=${params.pageNo}&numOfRows=${params.numOfRows}&resultType=${params.resultType}&fnccmpNm=${encodeURIComponent(query)}&serviceKey=${serviceKey}`;
     console.log("🔹 요청 URL:", requestUrl);
-    console.error("🔹 요청 URL:", requestUrl); // ❗ 강제 에러 로그 추가
 
+    // ✅ API 요청
     const response = await axios.get(apiUrl, { params });
 
     console.log("🔹 API Response:", JSON.stringify(response.data, null, 2));
-    console.error("🔹 API Response:", JSON.stringify(response.data, null, 2)); // ❗ 강제 에러 로그 추가
 
-    let companies = [];
+    // ✅ 응답 데이터가 존재하는지 확인
+    const items = response?.data?.response?.body?.items?.item || [];
 
-    if (
-      response.data &&
-      response.data.response &&
-      response.data.response.body &&
-      response.data.response.body.items
-    ) {
-      const items = response.data.response.body.items;
-      // ✅ items가 `null`일 경우 빈 배열 반환
-      if (!items || !items.item) {
-        console.warn("⚠️ API 응답에 'item' 데이터가 없음");
-        console.error("⚠️ API 응답에 'item' 데이터가 없음"); // ❗ 강제 에러 로그 추가
-        return [];
-      }
-      if (Array.isArray(items.item)) {
-        companies = items.item.map(item => {
-            // corpNm 값이 객체인 경우 '#text' 속성에서 값을 추출
-            if (item.corpNm && typeof item.corpNm === 'object') {
-                return item.corpNm['#text'] || null;
-          }
-          return item.corpNm;
-        });
-      } else if (items.item) {
-        const corpNm = items.item.corpNm;
-        companies.push(
-          (corpNm && typeof corpNm === 'object')
-            ? corpNm['#text'] || null
-            : corpNm
-        );
-      }
+    if (!Array.isArray(items)) {
+      console.warn("⚠️ API 응답에 'item' 데이터가 없음");
+      return [];
     }
-    console.log("✅ 최종 companies 리스트:", companies);
-    console.error("✅ 최종 companies 리스트:", companies); // ❗ 강제 에러 로그 추가
 
+    // ✅ 회사명 리스트 추출
+    const companies = items.map(item => {
+      if (item.afilCmpyNm && typeof item.afilCmpyNm === 'object') {
+        return item.afilCmpyNm['#text'] || null;
+      }
+      return item.afilCmpyNm;
+    }).filter(Boolean); // `null` 값 제거
+
+    console.log("✅ 최종 companies 리스트:", companies);
     return companies;
   } catch (error) {
-    console.error('Error fetching job categories (company list):', error);
-    console.error("❌ 요청 URL:", requestUrl); // ❗ 요청 URL을 에러 발생 시에도 출력
+    console.error('❌ Error fetching job categories:', error);
+    console.error("❌ 요청 URL:", requestUrl); // 에러 발생 시 요청 URL 출력
     return [];
   }
 };
