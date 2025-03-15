@@ -13,12 +13,33 @@ const PortfolioLike = require("../db/portfolioLike")(sequelize, DataTypes);
 const PortfolioTag = require("../db/portfolioTag")(sequelize, DataTypes);
 const Tag = require("../db/tag")(sequelize, DataTypes);
 const Attachment = require("../db/attachment")(sequelize, DataTypes);
-
 const Color = require("../db/color")(sequelize, DataTypes);
 const Follow = require("../db/followers")(sequelize, DataTypes);
-
 const Education = require("../db/education")(sequelize, DataTypes);
 const Activity = require("../db/activity")(sequelize, DataTypes);
+
+// ✅ 모델 관계 설정 (associate()를 명시적으로 호출)
+const models = {
+  sequelize,
+  User,
+  Article,
+  Portfolio,
+  PortfolioBookmark,
+  PortfolioLike,
+  PortfolioTag,
+  Tag,
+  Attachment,
+  Color,
+  Follow,
+  Education,
+  Activity,
+};
+
+Object.keys(models).forEach((modelName) => {
+  if (models[modelName].associate) {
+    models[modelName].associate(models); // 🔥 관계 설정
+  }
+});
 
 // 관계 정의
 User.hasMany(Portfolio, { foreignKey: "userId", onDelete: "CASCADE" });
@@ -48,18 +69,18 @@ Portfolio.belongsToMany(Tag, {
 });
 Tag.belongsToMany(Portfolio, { through: PortfolioTag, foreignKey: "tagId" });
 
-module.exports = {
-  sequelize,
-  User,
-  Article,
-  Portfolio,
-  PortfolioBookmark,
-  PortfolioLike,
-  PortfolioTag,
-  Tag,
-  Attachment,
-  Color,
-  Follow,
-  Education,
-  Activity,
-};
+//module.exports = {
+//  sequelize,
+//  User,
+//  Article,
+//  Portfolio,
+//  PortfolioBookmark,
+//  PortfolioLike,
+//  PortfolioTag,
+//  Tag,
+//  Attachment,
+//  Color,
+//  Follow,
+//  Education,
+//  Activity,
+//};
