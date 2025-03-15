@@ -1,4 +1,4 @@
-const { Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, PortfolioView } = require('../models');
+const { Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag } = require('../models');
 const s3Service = require('./s3Service');
 const axios = require('axios');
 
@@ -46,7 +46,7 @@ exports.getPortfolioDetails = async (portfolioId) => {
       { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] },
       { model: PortfolioLike, attributes: ["userId"] },
       { model: Attachment, attributes: ["fileUrl"] }, // ✅ `file_url` → `fileUrl`
-      { model: PortfolioView, attributes: ["userIp"] }, // ✅ 조회 기록 포함
+//      { model: PortfolioView, attributes: ["userIp"] }, // ✅ 조회 기록 포함
     ],
   });
 };
@@ -103,70 +103,17 @@ exports.toggleLike = async (userId, portfolioId) => {
     return { liked: true };
   }
 };
-
-/****
-🔹 포트폴리오 조회수 증가 (Redis 활용)
-exports.incrementView = async (portfolioId, userIp) => {
-  try {
-    const redisKey = `portfolio:${portfolioId}:views`;  // 조회수 키
-    const userKey = `portfolio:${portfolioId}:ip:${userIp}`; // 사용자별 조회 방지 키
-
-    // ✅ 동일 IP의 중복 조회 방지 (1시간 동안 중복 방지)
-    const hasViewed = await redisClient.get(userKey);
-    if (!hasViewed) {
-      // ✅ Redis에 조회수 증가
-      await redisClient.incr(redisKey);
-
-      // ✅ 1시간 동안 동일 IP 조회 방지
-      await redisClient.set(userKey, 1, { EX: 3600 });
-    }
-  } catch (error) {
-    console.error('❌ Error in incrementView:', error);
-  }
-};
-
-exports.getPortfolioWithViews = async (portfolioId) => {
-  try {
-    const redisKey = `portfolio:${portfolioId}:views`;
-
-    // ✅ Redis에서 조회수 가져오기
-    let views = await redisClient.get(redisKey);
-
-    if (!views) {
-      // Redis에 조회수가 없으면 DB에서 조회 후 Redis에 저장
-      const portfolio = await Portfolio.findByPk(portfolioId);
-      views = portfolio ? portfolio.views : 0;
-      await redisClient.set(redisKey, views);
-    }
-
-    return { views: parseInt(views, 10) };
-  } catch (error) {
-    console.error('❌ Error in getPortfolioWithViews:', error);
-    return { views: 0 };
-  }
-};
-***/
-/** 🔹 포트폴리오 조회수 증가 */
-exports.incrementView = async (portfolioId, userIp) => { // ✅ `userIp` 추가
+/** 🔹 포트폴리오 조회수 증가 - Portfolio 테이블의 views 컬럼 사용 */
+exports.incrementView = async (portfolioId) => {
   try {
     const portfolio = await Portfolio.findByPk(portfolioId);
     if (!portfolio) {
       throw new Error("포트폴리오를 찾을 수 없습니다.");
     }
 
-    // ✅ `PortfolioView` 테이블에서 조회한 기록이 있는지 확인
-    const existingView = await PortfolioView.findOne({
-      where: { portfolioId, userIp },
-    });
-
-    if (!existingView) {
-      // ✅ 조회 기록이 없으면 `PortfolioView` 테이블에 추가
-      await PortfolioView.create({ portfolioId, userIp });
-
-      // ✅ 포트폴리오 조회수 증가
-      portfolio.views += 1;
-      await portfolio.save();
-    }
+    // Portfolio 테이블의 views 컬럼 값 증가
+    portfolio.views = (portfolio.views || 0) + 1;
+    await portfolio.save();
 
     return portfolio.views;
   } catch (error) {
@@ -175,24 +122,25 @@ exports.incrementView = async (portfolioId, userIp) => { // ✅ `userIp` 추가
   }
 };
 
+/** 🔹 포트폴리오 조회수 포함 포트폴리오 조회 */
 exports.getPortfolioWithViews = async (portfolioId) => {
-    try {
-      // ✅ DB에서 조회수 포함하여 포트폴리오 조회
-      const portfolio = await Portfolio.findByPk(portfolioId);
-      if (!portfolio) {
-        throw new Error('포트폴리오를 찾을 수 없습니다.');
-      }
-
-      return {
-        id: portfolio.id,
-        title: portfolio.title,
-        description: portfolio.description,
-        views: portfolio.views
-      };
-    } catch (error) {
-      console.error('❌ 포트폴리오 조회 오류:', error);
-      throw error;
+  try {
+    // DB에서 조회수 포함 포트폴리오 조회
+    const portfolio = await Portfolio.findByPk(portfolioId);
+    if (!portfolio) {
+      throw new Error('포트폴리오를 찾을 수 없습니다.');
     }
+
+    return {
+      id: portfolio.id,
+      title: portfolio.title,
+      description: portfolio.description,
+      views: portfolio.views
+    };
+  } catch (error) {
+    console.error('❌ 포트폴리오 조회 오류:', error);
+    throw error;
+  }
 };
 
 /** 🔹 표지 이미지 업로드 */

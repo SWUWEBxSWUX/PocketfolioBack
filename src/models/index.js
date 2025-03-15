@@ -13,8 +13,8 @@ const PortfolioLike = require("../db/portfolioLike")(sequelize, DataTypes);
 const PortfolioTag = require("../db/portfolioTag")(sequelize, DataTypes);
 const Tag = require("../db/tag")(sequelize, DataTypes);
 const Attachment = require("../db/attachment")(sequelize, DataTypes);
-const PortfolioView = require("../db/portfolioView")(sequelize, DataTypes);
-const Color = require("../db/color")(sequelize, DataTypes); // ✅ 수정된 Color 모델 불러오기
+
+const Color = require("../db/color")(sequelize, DataTypes);
 const Follow = require("../db/followers")(sequelize, DataTypes);
 
 const Education = require("../db/education")(sequelize, DataTypes);
@@ -42,11 +42,6 @@ PortfolioLike.belongsTo(Portfolio, {
   as: "portfolio",
 });
 
-// ✅ PortfolioView 모델 관계 추가 (조회수 기록용)
-Portfolio.hasMany(PortfolioView, { foreignKey: "portfolioId", as: "views", onDelete: "CASCADE" });
-PortfolioView.belongsTo(Portfolio, { foreignKey: "portfolioId", as: "portfolio", onDelete: "CASCADE" });
-
-
 Portfolio.belongsToMany(Tag, {
   through: PortfolioTag,
   foreignKey: "portfolioId",
@@ -64,7 +59,6 @@ module.exports = {
   Tag,
   Attachment,
   Color,
-  PortfolioView,
   Follow,
   Education,
   Activity,
