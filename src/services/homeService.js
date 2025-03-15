@@ -25,6 +25,9 @@ exports.getJobCategories = async (query) => {
 
   try {
     const response = await axios.get(apiUrl, { params });
+
+    console.log("🔹 API Response:", JSON.stringify(response.data, null, 2));
+
     let companies = [];
 
     if (
@@ -34,6 +37,11 @@ exports.getJobCategories = async (query) => {
       response.data.response.body.items
     ) {
       const items = response.data.response.body.items;
+      // ✅ items가 `null`일 경우 빈 배열 반환
+      if (!items || !items.item) {
+        console.warn("⚠️ API 응답에 'item' 데이터가 없음");
+        return [];
+      }
       if (Array.isArray(items.item)) {
         companies = items.item.map(item => {
             // corpNm 값이 객체인 경우 '#text' 속성에서 값을 추출
