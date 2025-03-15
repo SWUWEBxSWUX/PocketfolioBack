@@ -125,11 +125,9 @@ exports.incrementView = async (portfolioId) => {
 /** 🔹 포트폴리오 조회수 포함 포트폴리오 조회 */
 exports.getPortfolioWithViews = async (portfolioId) => {
   try {
-    // DB에서 포트폴리오와 연결된 User 정보를 포함하여 조회
     const portfolio = await Portfolio.findByPk(portfolioId, {
-      include: [
-        { model: User, attributes: ['name'] }  // User 모델의 name 필드만 포함
-      ]
+      attributes: { exclude: [] }, // 모든 칼럼 반환
+      include: [{ model: User, attributes: ['name'] }] // User의 name도 포함
     });
     if (!portfolio) {
       throw new Error('포트폴리오를 찾을 수 없습니다.');
@@ -138,16 +136,18 @@ exports.getPortfolioWithViews = async (portfolioId) => {
     // Sequelize 인스턴스를 plain 객체로 변환
     const portfolioData = portfolio.get({ plain: true });
 
-    // 연결된 User 정보에서 사용자 이름 추출
+    // 연결된 User에서 사용자 이름 추출 후, userName 필드에 할당
     portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
     delete portfolioData.User; // 불필요한 User 객체 삭제
 
+    // portfolioData에는 Portfolio 모델의 모든 칼럼이 포함됩니다.
     return portfolioData;
   } catch (error) {
     console.error('❌ 포트폴리오 조회 오류:', error);
     throw error;
   }
 };
+
 
 
 /** 🔹 표지 이미지 업로드 */
