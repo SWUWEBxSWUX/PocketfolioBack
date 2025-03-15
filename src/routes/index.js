@@ -8,6 +8,7 @@ const homeRoutes = require("./homeRoutes");
 const navRoutes = require("./navRoutes");
 const portfolioRoutes = require("./portfolioRoutes");
 const mypage = require("./mypage");
+const getCompanyRoutes = require("./getCompanyRoutes");
 
 // 예제 라우트
 router.get("/test", (req, res) => {
@@ -21,5 +22,6 @@ router.use("/home", homeRoutes);
 router.use("/nav", navRoutes);
 router.use("/portfolio", portfolioRoutes);
 router.use("/mypage", mypage);
+router.use("/companies", getCompanyRoutes);
 
 module.exports = router;
