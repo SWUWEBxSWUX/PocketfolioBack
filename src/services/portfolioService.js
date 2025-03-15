@@ -156,12 +156,12 @@ exports.incrementView = async (portfolioId, userIp) => { // ✅ `userIp` 추가
 
     // ✅ `PortfolioView` 테이블에서 조회한 기록이 있는지 확인
     const existingView = await PortfolioView.findOne({
-      where: { portfolioid: portfolioId, userIp },
+      where: { portfolioId, userIp },
     });
 
     if (!existingView) {
       // ✅ 조회 기록이 없으면 `PortfolioView` 테이블에 추가
-      await PortfolioView.create({ portfolioid: portfolioId, userIp });
+      await PortfolioView.create({ portfolioId, userIp });
 
       // ✅ 포트폴리오 조회수 증가
       portfolio.views += 1;
