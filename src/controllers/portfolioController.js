@@ -40,7 +40,7 @@ exports.getPortfolioDetails = async (req, res) => {
     if (!portfolio) {
       return res.status(404).json({ message: '포트폴리오를 찾을 수 없습니다.' });
     }
-    res.status(200).json(portfolio);
+    res.status(200).json(portfolio); // ✅ 바로 JSON 응답 반환
   } catch (error) {
     console.error('Error fetching portfolio details:', error);
     res.status(500).json({ message: '포트폴리오 조회 중 오류가 발생했습니다.' });

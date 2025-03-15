@@ -43,12 +43,12 @@ exports.createPortfolio = async (userId, data, file) => {
 exports.getPortfolioDetails = async (portfolioId) => {
   try {
     const portfolio = await Portfolio.findByPk(portfolioId, {
-      attributes: { exclude: [] }, // 모든 칼럼 반환
+      attributes: { exclude: [] }, // 🔥 모든 칼럼 반환
       include: [
-        { model: User, attributes: ['name'] }, // 사용자 이름 포함
-        { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] }, // 태그 포함
-        { model: PortfolioLike, attributes: ["userId"] }, // 좋아요 포함
-        { model: Attachment, attributes: ["fileUrl"] }, // 첨부파일 포함
+        { model: User, attributes: ['id', 'name', 'email'] }, // ✅ 사용자 정보 포함
+        { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] }, // ✅ 태그 포함
+        { model: PortfolioLike, attributes: ["userId"] }, // ✅ 좋아요 포함
+        { model: Attachment, attributes: ["fileUrl"] }, // ✅ 첨부파일 포함
       ]
     });
 
@@ -59,9 +59,10 @@ exports.getPortfolioDetails = async (portfolioId) => {
     // Sequelize 인스턴스를 plain 객체로 변환
     const portfolioData = portfolio.get({ plain: true });
 
-    // 연결된 User에서 사용자 이름 추출 후, userName 필드에 할당
+    // 🔹 `User` 정보에서 사용자 이름 추출 후 `userName` 필드에 추가
     portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
-    delete portfolioData.User; // 불필요한 User 객체 삭제
+    portfolioData.userEmail = portfolioData.User ? portfolioData.User.email : null;
+    delete portfolioData.User; // 🔥 불필요한 `User` 객체 삭제
 
     return portfolioData;
   } catch (error) {
