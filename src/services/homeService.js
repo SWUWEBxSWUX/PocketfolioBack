@@ -92,18 +92,18 @@ exports.filterPortfolios = async (filters) => {
   }
 
   return await Portfolio.findAll({
-    attributes: ['id', 'title', 'thumbnail', 'userName', 'views', 'likes'],
+    attributes: ['id', 'title', 'thumbnail', 'userName', 'views', 'likesCount'],
     where: whereCondition,
   });
 };
 // 4. 정렬된 포트폴리오 조회
 exports.getPortfolios = async (sort) => {
   let order = [['createdAt', 'DESC']];
-  if (sort === 'likes') order = [['likes', 'DESC']];
+  if (sort === 'likesCount') order = [['likes', 'DESC']];
   else if (sort === 'views') order = [['views', 'DESC']];
 
   return await Portfolio.findAll({
-    attributes: ['id', 'title', 'thumbnail', 'userName', 'views', 'likes'],
+    attributes: ['id', 'title', 'thumbnail', 'userName', 'views', 'likesCount'],
     order,
   });
 };
