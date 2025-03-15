@@ -49,7 +49,7 @@ exports.getPortfolioDetails = async (portfolioId) => {
       include: [
         { model: User, attributes: ['id', 'name', 'email'] }, // ✅ 사용자 정보 포함
         { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] }, // ✅ 태그 포함
-        { model: PortfolioLike, attributes: ["userId"] }, // ✅ 좋아요 포함
+        { model: PortfolioLike, as: "likes", attributes: ["userId"] }, // ✅ 좋아요 포함
         { model: Attachment, attributes: ["fileUrl"] }, // ✅ 첨부파일 포함
       ]
     });
