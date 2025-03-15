@@ -27,10 +27,12 @@ exports.getJobCategories = async (query) => {
     // ✅ API 요청 URL 로그 추가
     const requestUrl = `${apiUrl}?pageNo=${params.pageNo}&numOfRows=${params.numOfRows}&resultType=${params.resultType}&fnccmpNm=${encodeURIComponent(query)}&serviceKey=${serviceKey}`;
     console.log("🔹 요청 URL:", requestUrl);
+    console.error("🔹 요청 URL:", requestUrl); // ❗ 강제 에러 로그 추가
 
     const response = await axios.get(apiUrl, { params });
 
     console.log("🔹 API Response:", JSON.stringify(response.data, null, 2));
+    console.error("🔹 API Response:", JSON.stringify(response.data, null, 2)); // ❗ 강제 에러 로그 추가
 
     let companies = [];
 
@@ -44,6 +46,7 @@ exports.getJobCategories = async (query) => {
       // ✅ items가 `null`일 경우 빈 배열 반환
       if (!items || !items.item) {
         console.warn("⚠️ API 응답에 'item' 데이터가 없음");
+        console.error("⚠️ API 응답에 'item' 데이터가 없음"); // ❗ 강제 에러 로그 추가
         return [];
       }
       if (Array.isArray(items.item)) {
@@ -63,9 +66,13 @@ exports.getJobCategories = async (query) => {
         );
       }
     }
+    console.log("✅ 최종 companies 리스트:", companies);
+    console.error("✅ 최종 companies 리스트:", companies); // ❗ 강제 에러 로그 추가
+
     return companies;
   } catch (error) {
     console.error('Error fetching job categories (company list):', error);
+    console.error("❌ 요청 URL:", requestUrl); // ❗ 요청 URL을 에러 발생 시에도 출력
     return [];
   }
 };
