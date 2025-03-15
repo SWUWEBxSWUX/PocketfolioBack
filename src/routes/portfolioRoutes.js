@@ -9,8 +9,8 @@ const upload = multer({ storage: multer.memoryStorage() }); // S3 업로드용
 /** 🔹 포트폴리오 생성 */
 router.post('/create', verifyToken, portfolioController.createPortfolio);
 
-/** 🔹 포트폴리오 상세 조회 (조회수 포함)*/
-router.get('/:id', portfolioController.getPortfolio);
+/** 🔹 포트폴리오 상세 조회 */
+router.get('/:id', portfolioController.getPortfolioDetails);
 
 /** 🔹 포트폴리오 수정 */
 router.patch('/:id', verifyToken, portfolioController.updatePortfolio);
