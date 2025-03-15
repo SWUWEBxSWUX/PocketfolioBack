@@ -3,12 +3,25 @@ const { Portfolio, Tag } = require('../models');
 
 // 1. 추천 포트폴리오 조회 (좋아요/조회수 기준)
 exports.getRecommendedPortfolios = async () => {
-  return await Portfolio.findAll({
-    attributes: ['id', 'title', 'coverImage', 'userId', 'views', 'likes'],
-    order: [['likes', 'DESC'], ['views', 'DESC']],
-    limit: 5,
-  });
+  try {
+    const portfolios = await Portfolio.findAll({
+      attributes: ['id', 'title', 'coverImage', 'views'],
+      include: [
+        { model: User, attributes: ['name'], as: 'user' },
+        { model: PortfolioLike, attributes: ['id'], as: 'likes' } // ✅ `likes`는 전체 개수 확인용
+      ]
+    });
+
+    // ✅ `likes.length`로 정렬
+    portfolios.sort((a, b) => b.likes.length - a.likes.length || b.views - a.views);
+
+    return portfolios.slice(0, 5); // 상위 5개만 반환
+  } catch (error) {
+    console.error('❌ 추천 포트폴리오 조회 오류:', error);
+    throw error;
+  }
 };
+
 // 2. 직군(회사) 리스트 조회 → 금융위원회 API 호출로 변경
 exports.getJobCategories = async (query) => {
   const serviceKey = process.env.DATA_GO_KR_API_KEY; // 공공데이터포털 인증키
