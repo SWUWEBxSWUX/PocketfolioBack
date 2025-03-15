@@ -57,7 +57,7 @@ exports.getPortfolioDetails = async (portfolioId) => {
     }
 
     // Sequelize 인스턴스를 plain 객체로 변환
-    const portfolioData = portfolio.get({ plain: true });
+    const portfolioData = portfolio.toJSON();
 
     // 🔹 `User` 정보에서 사용자 이름 추출 후 `userName` 필드에 추가
     portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
