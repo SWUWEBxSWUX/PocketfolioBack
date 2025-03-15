@@ -24,6 +24,10 @@ exports.getJobCategories = async (query) => {
   };
 
   try {
+    // ✅ API 요청 URL 로그 추가
+    const requestUrl = `${apiUrl}?pageNo=${params.pageNo}&numOfRows=${params.numOfRows}&resultType=${params.resultType}&fnccmpNm=${encodeURIComponent(query)}&serviceKey=${serviceKey}`;
+    console.log("🔹 요청 URL:", requestUrl);
+
     const response = await axios.get(apiUrl, { params });
 
     console.log("🔹 API Response:", JSON.stringify(response.data, null, 2));
