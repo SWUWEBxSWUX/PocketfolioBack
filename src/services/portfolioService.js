@@ -1,4 +1,6 @@
-const { User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag } = require('../models');
+const models = require('../models'); // ✅ models 전체를 불러옴
+const { sequelize, User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Attachment } = models;
+
 const s3Service = require('./s3Service');
 const axios = require('axios');
 

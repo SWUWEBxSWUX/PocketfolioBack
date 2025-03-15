@@ -35,12 +35,6 @@ const models = {
   Activity,
 };
 
-Object.keys(models).forEach((modelName) => {
-  if (models[modelName].associate) {
-    models[modelName].associate(models); // 🔥 관계 설정
-  }
-});
-
 // 관계 정의
 User.hasMany(Portfolio, { foreignKey: "userId", onDelete: "CASCADE" });
 Portfolio.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
@@ -68,6 +62,8 @@ Portfolio.belongsToMany(Tag, {
   foreignKey: "portfolioId",
 });
 Tag.belongsToMany(Portfolio, { through: PortfolioTag, foreignKey: "tagId" });
+
+module.exports = models;
 
 //module.exports = {
 //  sequelize,
