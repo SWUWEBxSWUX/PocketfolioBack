@@ -23,6 +23,8 @@ exports.getJobCategories = async (query) => {
     serviceKey: serviceKey,
   };
 
+  console.log("🟢 [DEBUG] getJobCategories 실행됨 🟢");
+
   try {
     // ✅ API 요청 URL 로그 추가
     const requestUrl = `${apiUrl}?pageNo=${params.pageNo}&numOfRows=${params.numOfRows}&resultType=${params.resultType}&fnccmpNm=${encodeURIComponent(query)}&serviceKey=${serviceKey}`;
