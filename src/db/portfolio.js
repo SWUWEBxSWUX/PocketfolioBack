@@ -31,12 +31,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Portfolio.associate = (models) => {
-    Portfolio.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
-    Portfolio.hasMany(models.PortfolioLike, { foreignKey: "portfolioId", as: "likes" });
-    Portfolio.hasMany(models.Attachment, { foreignKey: "portfolioId", as: "attachments" });
-    Portfolio.belongsToMany(models.Tag, { through: models.PortfolioTag, foreignKey: "portfolioId" });
-  };
-
   return Portfolio;
 };
