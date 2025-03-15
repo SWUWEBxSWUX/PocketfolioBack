@@ -4,7 +4,7 @@ const { Portfolio, Tag } = require('../models');
 // 1. 추천 포트폴리오 조회 (좋아요/조회수 기준)
 exports.getRecommendedPortfolios = async () => {
   return await Portfolio.findAll({
-    attributes: ['id', 'title', 'coverImage', 'userName', 'views', 'likes'],
+    attributes: ['id', 'title', 'coverImage', 'userId', 'views', 'likes'],
     order: [['likes', 'DESC'], ['views', 'DESC']],
     limit: 5,
   });
