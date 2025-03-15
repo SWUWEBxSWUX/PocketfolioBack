@@ -8,7 +8,7 @@ const Portfolio = db.Portfolio; // Portfolio 모델 (예제)
 exports.getAuthStatus = async (userId) => {
     try {
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'username', 'email'], // 필요한 정보만 반환
+            attributes: ['id', 'name', 'email'], // 필요한 정보만 반환
         });
         return user ? { isAuthenticated: true, user } : { isAuthenticated: false, user: null };
     } catch (error) {
@@ -24,8 +24,8 @@ exports.search = async (query, type) => {
 
         if (type === 'user') {
             results = await User.findAll({
-                where: { username: { [db.Sequelize.Op.like]: `%${query}%` } },
-                attributes: ['id', 'username', 'email'],
+                where: { name: { [db.Sequelize.Op.like]: `%${query}%` } },
+                attributes: ['id', 'name', 'email'],
             });
         } else if (type === 'portfolio') {
             results = await Portfolio.findAll({
