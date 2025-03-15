@@ -156,12 +156,12 @@ exports.incrementView = async (portfolioId, userIp) => { // ✅ `userIp` 추가
 
     // ✅ `PortfolioView` 테이블에서 조회한 기록이 있는지 확인
     const existingView = await PortfolioView.findOne({
-      where: { portfolioId, userIp },
+      where: { portfolioid: portfolioId, userIp },
     });
 
     if (!existingView) {
       // ✅ 조회 기록이 없으면 `PortfolioView` 테이블에 추가
-      await PortfolioView.create({ portfolioId, userIp });
+      await PortfolioView.create({ portfolioid: portfolioId, userIp });
 
       // ✅ 포트폴리오 조회수 증가
       portfolio.views += 1;
@@ -193,22 +193,6 @@ exports.getPortfolioWithViews = async (portfolioId) => {
       console.error('❌ 포트폴리오 조회 오류:', error);
       throw error;
     }
-};
-
-
-/** 🔹 포트폴리오 댓글 추가 */
-exports.addComment = async (userId, portfolioId, content) => {
-  return await Comment.create({ userId: userId, portfolioId: portfolioId, content });
-};
-
-/** 🔹 포트폴리오 댓글 삭제 */
-exports.deleteComment = async (userId, commentId) => {
-  const comment = await Comment.findByPk(commentId);
-  if (!comment || comment.userId !== userId) {
-    return false;
-  }
-  await comment.destroy();
-  return true;
 };
 
 /** 🔹 표지 이미지 업로드 */
