@@ -41,14 +41,33 @@ exports.createPortfolio = async (userId, data, file) => {
 
 /** 🔹 포트폴리오 상세 조회 */
 exports.getPortfolioDetails = async (portfolioId) => {
-  return await Portfolio.findByPk(portfolioId, {
-    include: [
-      { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] },
-      { model: PortfolioLike, attributes: ["userId"] },
-      { model: Attachment, attributes: ["fileUrl"] }, // ✅ `file_url` → `fileUrl`
-//      { model: PortfolioView, attributes: ["userIp"] }, // ✅ 조회 기록 포함
-    ],
-  });
+  try {
+    const portfolio = await Portfolio.findByPk(portfolioId, {
+      attributes: { exclude: [] }, // 모든 칼럼 반환
+      include: [
+        { model: User, attributes: ['name'] }, // 사용자 이름 포함
+        { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] }, // 태그 포함
+        { model: PortfolioLike, attributes: ["userId"] }, // 좋아요 포함
+        { model: Attachment, attributes: ["fileUrl"] }, // 첨부파일 포함
+      ]
+    });
+
+    if (!portfolio) {
+      throw new Error('포트폴리오를 찾을 수 없습니다.');
+    }
+
+    // Sequelize 인스턴스를 plain 객체로 변환
+    const portfolioData = portfolio.get({ plain: true });
+
+    // 연결된 User에서 사용자 이름 추출 후, userName 필드에 할당
+    portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
+    delete portfolioData.User; // 불필요한 User 객체 삭제
+
+    return portfolioData;
+  } catch (error) {
+    console.error('❌ 포트폴리오 조회 오류:', error);
+    throw error;
+  }
 };
 
 /** 🔹 포트폴리오 수정 */
@@ -121,33 +140,6 @@ exports.incrementView = async (portfolioId) => {
     throw error;
   }
 };
-
-/** 🔹 포트폴리오 조회수 포함 포트폴리오 조회 */
-exports.getPortfolioWithViews = async (portfolioId) => {
-  try {
-    const portfolio = await Portfolio.findByPk(portfolioId, {
-      attributes: { exclude: [] }, // 모든 칼럼 반환
-      include: [{ model: User, attributes: ['name'] }] // User의 name도 포함
-    });
-    if (!portfolio) {
-      throw new Error('포트폴리오를 찾을 수 없습니다.');
-    }
-
-    // Sequelize 인스턴스를 plain 객체로 변환
-    const portfolioData = portfolio.get({ plain: true });
-
-    // 연결된 User에서 사용자 이름 추출 후, userName 필드에 할당
-    portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
-    delete portfolioData.User; // 불필요한 User 객체 삭제
-
-    // portfolioData에는 Portfolio 모델의 모든 칼럼이 포함됩니다.
-    return portfolioData;
-  } catch (error) {
-    console.error('❌ 포트폴리오 조회 오류:', error);
-    throw error;
-  }
-};
-
 
 
 /** 🔹 표지 이미지 업로드 */

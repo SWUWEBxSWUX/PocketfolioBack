@@ -40,23 +40,12 @@ exports.getPortfolioDetails = async (req, res) => {
     if (!portfolio) {
       return res.status(404).json({ message: '포트폴리오를 찾을 수 없습니다.' });
     }
-    res.status(200).json({ portfolio });
+    res.status(200).json(portfolio);
   } catch (error) {
     console.error('Error fetching portfolio details:', error);
     res.status(500).json({ message: '포트폴리오 조회 중 오류가 발생했습니다.' });
   }
 };
-/** 🔹 포트폴리오 상세 조회-포트폴리오 정보와 조회수를 함께 반환하는 API */
-exports.getPortfolio = async (req, res) => {
-    const { id } = req.params;
-
-    try {
-      const portfolio = await portfolioService.getPortfolioWithViews(id);
-      res.status(200).json(portfolio);
-    } catch (error) {
-      res.status(500).json({ error: '포트폴리오 조회 실패' });
-    }
-  };
 
 /** 🔹 포트폴리오 수정 */
 exports.updatePortfolio = async (req, res) => {
