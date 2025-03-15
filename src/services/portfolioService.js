@@ -1,4 +1,4 @@
-const { Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Comment } = require('../models');
+const { Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, PortfolioView } = require('../models');
 const s3Service = require('./s3Service');
 const axios = require('axios');
 

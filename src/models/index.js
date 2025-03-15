@@ -42,6 +42,11 @@ PortfolioLike.belongsTo(Portfolio, {
   as: "portfolio",
 });
 
+// ✅ PortfolioView 모델 관계 추가 (조회수 기록용)
+Portfolio.hasMany(PortfolioView, { foreignKey: "portfolioId", as: "views", onDelete: "CASCADE" });
+PortfolioView.belongsTo(Portfolio, { foreignKey: "portfolioId", as: "portfolio", onDelete: "CASCADE" });
+
+
 Portfolio.belongsToMany(Tag, {
   through: PortfolioTag,
   foreignKey: "portfolioId",
