@@ -18,12 +18,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  PortfolioLike.associate = (models) => {
-    PortfolioLike.belongsTo(models.Portfolio, {
-      foreignKey: "portfolioId",
-      as: "portfolio",
-    });
-  };
-
   return PortfolioLike;
 };
