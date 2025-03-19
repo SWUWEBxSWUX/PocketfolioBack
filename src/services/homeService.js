@@ -1,5 +1,7 @@
 const axios = require('axios');
-const { Portfolio, Tag } = require('../models');
+const models = require('../models');
+const { sequelize, User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Attachment } = models;
+
 
 // 1. 추천 포트폴리오 조회 (좋아요/조회수 기준)
 exports.getRecommendedPortfolios = async () => {
@@ -7,7 +9,7 @@ exports.getRecommendedPortfolios = async () => {
     const portfolios = await Portfolio.findAll({
       attributes: ['id', 'title', 'coverImage', 'views'],
       include: [
-        { model: User, attributes: ['name'], as: 'user' },
+        { model: User, attributes: ['name'] },
         { model: PortfolioLike, attributes: ['id'], as: 'likes' } // ✅ `likes`는 전체 개수 확인용
       ]
     });
