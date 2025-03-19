@@ -45,38 +45,16 @@ PortfolioBookmark.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(PortfolioLike, { foreignKey: "userId" });
 PortfolioLike.belongsTo(User, { foreignKey: "userId" });
 
+Portfolio.hasMany(PortfolioLike, { foreignKey: "portfolioId" });
+PortfolioLike.belongsTo(Portfolio, { foreignKey: "portfolioId" });
+
 Portfolio.hasMany(Attachment, { foreignKey: "portfolioId" });
 Attachment.belongsTo(Portfolio, { foreignKey: "portfolioId" });
 
 Portfolio.hasMany(Color, { foreignKey: "portfolioId" });
 Color.belongsTo(Portfolio, { foreignKey: "portfolioId" });
 
-Portfolio.hasMany(PortfolioLike, { foreignKey: "portfolioId", as: "likes" });
-PortfolioLike.belongsTo(Portfolio, {
-  foreignKey: "portfolioId",
-  as: "portfolio",
-});
-
-Portfolio.belongsToMany(Tag, {
-  through: PortfolioTag,
-  foreignKey: "portfolioId",
-});
+Portfolio.belongsToMany(Tag, { through: PortfolioTag, foreignKey: "portfolioId"});
 Tag.belongsToMany(Portfolio, { through: PortfolioTag, foreignKey: "tagId" });
 
 module.exports = models;
-
-//module.exports = {
-//  sequelize,
-//  User,
-//  Article,
-//  Portfolio,
-//  PortfolioBookmark,
-//  PortfolioLike,
-//  PortfolioTag,
-//  Tag,
-//  Attachment,
-//  Color,
-//  Follow,
-//  Education,
-//  Activity,
-//};
