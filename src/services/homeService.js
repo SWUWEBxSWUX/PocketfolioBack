@@ -10,7 +10,7 @@ exports.getRecommendedPortfolios = async () => {
       attributes: ['id', 'title', 'coverImage', 'views'],
       include: [
         { model: User, attributes: ['name'] },
-        { model: PortfolioLike, attributes: ['id'], as: 'likes' } // ✅ `likes`는 전체 개수 확인용
+        { model: PortfolioLike, attributes: ['id'] }
       ]
     });
 
