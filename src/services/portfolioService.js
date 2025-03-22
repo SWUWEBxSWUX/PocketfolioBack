@@ -1,5 +1,6 @@
 const models = require('../models'); // ✅ models 전체를 불러옴
 const { sequelize, User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Attachment } = models;
+const { Sequelize, Op, fn, col, literal } = require('sequelize'); // ✅ Sequelize 추가
 
 const s3Service = require('./s3Service');
 const axios = require('axios');
@@ -44,27 +45,35 @@ exports.createPortfolio = async (userId, data, file) => {
 /** 🔹 포트폴리오 상세 조회 */
 exports.getPortfolioDetails = async (portfolioId) => {
   try {
-    const portfolio = await Portfolio.findByPk(portfolioId, {
-      attributes: { exclude: [] }, // 🔥 모든 칼럼 반환
+    const portfolios = await Portfolio.findAll({
+      attributes: [
+        'id',
+        'title',
+        'coverImage',
+        'views',
+        'description',
+        'createdAt',
+        [fn('COUNT', col('PortfolioLikes.id')), 'likesCount'] // ✅ 실시간 COUNT()
+      ],
       include: [
-        { model: User, attributes: ['id', 'name', 'email'] }, // ✅ 사용자 정보 포함
-        { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] }, // ✅ 태그 포함
-        { model: PortfolioLike, attributes: ["userId"] }, // ✅ 좋아요 포함
-        { model: Attachment, attributes: ["fileUrl"] }, // ✅ 첨부파일 포함
-      ]
+        { model: User, attributes: [] }, // ✅ User 테이블에서 name, email은 직접 처리
+        { model: Tag, through: { attributes: [] }, attributes: ['id', 'name'] },
+        { model: PortfolioLike, attributes: [] },
+        { model: Attachment, attributes: ["fileUrl"] }
+      ],
+      group: ['Portfolio.id'],
+      raw: true, // ✅ JSON 변환 필요 없음
+      nest: true // ✅ 중첩된 결과를 유지
     });
 
-    if (!portfolio) {
-      throw new Error('포트폴리오를 찾을 수 없습니다.');
-    }
+    if (!portfolios.length) throw new Error('포트폴리오를 찾을 수 없습니다.');
 
-    // Sequelize 인스턴스를 plain 객체로 변환
-    const portfolioData = portfolio.toJSON();
+    let portfolioData = portfolios[0];
 
-    // 🔹 `User` 정보에서 사용자 이름 추출 후 `userName` 필드에 추가
-    portfolioData.userName = portfolioData.User ? portfolioData.User.name : null;
-    portfolioData.userEmail = portfolioData.User ? portfolioData.User.email : null;
-    delete portfolioData.User; // 🔥 불필요한 `User` 객체 삭제
+    // 🔥 User 정보에서 userName, userEmail 수동 추가
+    const user = await User.findByPk(portfolioData.userId, { attributes: ['name', 'email'], raw: true });
+    portfolioData.userName = user ? user.name : null;
+    portfolioData.userEmail = user ? user.email : null;
 
     return portfolioData;
   } catch (error) {
@@ -72,6 +81,7 @@ exports.getPortfolioDetails = async (portfolioId) => {
     throw error;
   }
 };
+
 
 /** 🔹 포트폴리오 수정 */
 exports.updatePortfolio = async (userId, portfolioId, data) => {
@@ -114,35 +124,53 @@ exports.deletePortfolio = async (userId, portfolioId) => {
 };
 
 /** 🔹 포트폴리오 좋아요 추가/취소 */
-exports.toggleLike = async (userId, portfolioId) => {
-  const existingLike = await PortfolioLike.findOne({ where: { userId: userId, portfolioId: portfolioId } });
+//exports.toggleLike = async (userId, portfolioId) => {
+//  const existingLike = await PortfolioLike.findOne({ where: { userId: userId, portfolioId: portfolioId } });
+//
+//  if (existingLike) {
+//    await existingLike.destroy();
+//    return { liked: false };
+//  } else {
+//    await PortfolioLike.create({ userId, portfolioId });
+//    return { liked: true };
+//  }
+//};
 
-  if (existingLike) {
-    await existingLike.destroy();
-    return { liked: false };
-  } else {
-    await PortfolioLike.create({ userId, portfolioId });
-    return { liked: true };
-  }
+exports.toggleLike = async (userId, portfolioId) => {
+  return await sequelize.transaction(async (t) => {
+    const existingLike = await PortfolioLike.findOne({
+      where: { userId, portfolioId },
+      transaction: t
+    });
+
+    if (existingLike) {
+      await existingLike.destroy({ transaction: t });
+      return { liked: false };
+    } else {
+      await PortfolioLike.create({ userId, portfolioId }, { transaction: t });
+      return { liked: true };
+    }
+  });
 };
+
+
 /** 🔹 포트폴리오 조회수 증가 - Portfolio 테이블의 views 컬럼 사용 */
 exports.incrementView = async (portfolioId) => {
   try {
-    const portfolio = await Portfolio.findByPk(portfolioId);
-    if (!portfolio) {
-      throw new Error("포트폴리오를 찾을 수 없습니다.");
-    }
+    const [updated] = await Portfolio.update(
+      { views: sequelize.literal('views + 1') }, // ✅ views 증가
+      { where: { id: portfolioId } }
+    );
 
-    // Portfolio 테이블의 views 컬럼 값 증가
-    portfolio.views = (portfolio.views || 0) + 1;
-    await portfolio.save();
+    if (updated === 0) throw new Error("포트폴리오를 찾을 수 없습니다.");
 
-    return portfolio.views;
+    return true;
   } catch (error) {
     console.error("❌ 조회수 증가 오류:", error);
     throw error;
   }
 };
+
 
 
 /** 🔹 표지 이미지 업로드 */
@@ -159,43 +187,4 @@ exports.uploadAttachments = async (files) => {
     urls.push(uploadResult.Location);
   }
   return urls;
-};
-
-/** 🔹 직군 리스트 조회 */
-exports.getCompanyList = async (query) => {
-  const serviceKey = process.env.DATA_GO_KR_API_KEY; // 공공데이터포털 인증키
-  const apiUrl = 'http://apis.data.go.kr/1160100/service/GetCorpBasicInfoService_V2/getAffiliate_V2';
-
-  // 요청 파라미터 구성
-  const params = {
-    pageNo: 1,
-    numOfRows: 10,
-    resultType: 'json',
-    fnccmpNm: query,  // 전달받은 검색어 사용
-    serviceKey: serviceKey,
-  };
-
-  try {
-    const response = await axios.get(apiUrl, { params });
-    let companies = [];
-
-    // API 응답 구조에 따라 회사명 추출
-    if (
-      response.data &&
-      response.data.response &&
-      response.data.response.body &&
-      response.data.response.body.items
-    ) {
-      const items = response.data.response.body.items;
-      if (Array.isArray(items.item)) {
-        companies = items.item.map(item => item.corpNm);
-      } else if (items.item) {
-        companies.push(items.item.corpNm);
-      }
-    }
-    return companies;
-  } catch (error) {
-    console.error('Error fetching company list:', error);
-    return [];
-  }
 };

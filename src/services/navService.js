@@ -1,6 +1,6 @@
 // services/navService.js
 const db = require('../models'); // Sequelize 모델 사용 (데이터베이스 연결)
-const { sequelize, User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Attachment } = models;
+const { sequelize, User, Portfolio, PortfolioLike, PortfolioBookmark, Tag, PortfolioTag, Attachment } = db;
 
 // ✅ 1. 사용자 인증 상태 확인 (JWT에서 user ID 가져와서 조회)
 exports.getAuthStatus = async (userId) => {
